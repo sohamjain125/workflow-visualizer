@@ -1,147 +1,183 @@
 <p-toast></p-toast>
 
 <div class="workflow-container">
-  <div class="header-section">
-    <h2>States Tree</h2>
+  <!-- States Container with Table-like Structure -->
+  <div class="states-container">
+    <!-- Toolbar with title, search, and actions -->
     <div class="table-toolbar">
-      <div class="search-section">
-        <span class="p-input-icon-left">
+      <div class="left-section">
+        <h3>States Tree</h3>
+        <div class="search-section">
+          <span class="p-input-icon-left">
     <i class="pi pi-search"></i>
-          <input pInputText [(ngModel)]="searchText" placeholder="Search..." />
+            <input pInputText [(ngModel)]="searchText" placeholder="Search nodes..." (input)="filterNodes()">
   </span>
   <p-dropdown 
-          [(ngModel)]="selectedApplicationType" 
     [options]="applicationTypes" 
-          placeholder="Select Application Type"
-          [showClear]="true">
-        </p-dropdown>
-        <button pButton type="button" label="Reset Filters" (click)="resetFilters()"></button>
-      </div>
-      <div class="action-buttons">
-        <button pButton type="button" icon="pi pi-upload" label="Upload JSON" (click)="fileInput.click()"></button>
-        <input #fileInput type="file" (change)="onFileSelected($event)" accept="application/json" style="display: none">
-        <button pButton type="button" icon="pi pi-code" label="View/Edit JSON" (click)="showJsonDialog()"></button>
-        <button pButton type="button" icon="pi pi-download" label="Download" (click)="downloadJson()"></button>
-        <button pButton type="button" icon="pi pi-plus" label="Add Node" (click)="openAddNodeDialog()"></button>
-</div>
-    </div>
-  </div>
-
-  <div class="table-section">
-    <div class="table-header">
-      <div></div>
-      <div>Type</div>
-      <div>Name</div>
-      <div>Details</div>
-      <div>Actions</div>
-    </div>
-
-    <p-tree [value]="treeNodes" [loading]="loading">
-      <ng-template pTemplate="default" let-node>
-        <div class="tree-node-row">
-          <div class="col-expand"></div>
-          <div class="col-type">
-          <span class="node-type" [ngClass]="{
-              'state-badge': node.data.type === 'state' || node.data._type === 'state',
-              'transition-badge': node.data.type === 'transition',
-              'action-badge': node.data.type === 'action' || node.data._type === 'action'
-            }">
-              <i [class]="getNodeIcon(node)"></i>
-              {{getNodeType(node)}}
-            </span>
-          </div>
-          <div class="col-name">
-            <span class="node-name">{{node.data.name}}</span>
-          </div>
-          <div class="col-details">
-            <ng-container [ngSwitch]="node.data.type || node.data._type">
-              <!-- State Details -->
-              <div class="details-group" *ngSwitchCase="'state'">
-                <span class="detail-item" *ngIf="node.data.idleDays">
-                  <i class="pi pi-calendar"></i>
-                  {{node.data.idleDays}} days
-                </span>
-                <span class="detail-item" *ngIf="node.data.assignedStaff">
-                  <i class="pi pi-user"></i>
-                  {{node.data.assignedStaff}}
-                </span>
-              </div>
-
-              <!-- Transition Details -->
-              <div *ngSwitchCase="'transition'" class="details-container">
-                <span *ngIf="node.data.next" class="detail-item">
-                  <i class="pi pi-arrow-right"></i> {{node.data.next}}
-                </span>
-                <span *ngIf="node.data.selectAttachment" class="detail-item">
-                  <i class="pi pi-paperclip"></i> Requires Attachment
-                </span>
-              </div>
-
-              <!-- Action Details -->
-              <div *ngSwitchCase="'action'" class="details-container">
-                <ng-container [ngSwitch]="node.data.actionType">
-                  <div *ngSwitchCase="'email'" class="details-group">
-                    <span class="detail-item"><i class="pi pi-envelope"></i> {{node.data.addressee?.join(', ')}}</span>
-                    <span *ngIf="node.data.subject" class="detail-item"><i class="pi pi-info-circle"></i> {{node.data.subject}}</span>
-                    <span *ngIf="node.data.previewOnly" class="detail-item"><i class="pi pi-eye"></i> Preview Only</span>
-                  </div>
-                  <div *ngSwitchCase="'sms'" class="details-group">
-                    <span class="detail-item"><i class="pi pi-mobile"></i> {{node.data.addressee?.join(', ')}}</span>
-                    <span *ngIf="node.data.content" class="detail-item"><i class="pi pi-comment"></i> {{node.data.content}}</span>
-                  </div>
-                  <div *ngSwitchCase="'task'" class="details-group">
-                    <span class="detail-item"><i class="pi pi-user"></i> {{node.data.addressee?.join(', ')}}</span>
-                    <span *ngIf="node.data.isReviewable" class="detail-item"><i class="pi pi-check-square"></i> Reviewable</span>
-                  </div>
-                  <div *ngSwitchCase="'document'" class="details-group">
-                    <span class="detail-item"><i class="pi pi-file"></i> {{node.data.docType}}</span>
-                    <span *ngIf="node.data.documentFolder" class="detail-item">
-                      <i class="pi pi-folder"></i> {{node.data.documentFolder}}
-                    </span>
-                    <span *ngIf="node.data.access" class="detail-item">
-                      <i class="pi pi-lock"></i> {{node.data.access}}
-                    </span>
-                  </div>
-                  <div *ngSwitchCase="'decision'" class="details-group">
-                    <span class="detail-item"><i class="pi pi-check-circle"></i> {{node.data.decisionType}}</span>
-                    <span *ngIf="node.data.commencedBy" class="detail-item">
-                      <i class="pi pi-calendar"></i> Commenced: {{node.data.commencedBy}} days
-                    </span>
-                    <span *ngIf="node.data.completedBy" class="detail-item">
-                      <i class="pi pi-calendar-times"></i> Completed: {{node.data.completedBy}} days
-                    </span>
-                    <span *ngIf="node.data.costOfDevelopment" class="detail-item">
-                      <i class="pi pi-dollar"></i> {{node.data.costOfDevelopment}}
-          </span>
-                  </div>
-                </ng-container>
-              </div>
-
-              <!-- Template Details -->
-              <div *ngSwitchCase="'template'" class="details-container">
-                <span *ngIf="node.data.saveToRelatedDoc" class="detail-item">
-                  <i class="pi pi-save"></i> Save to Related Doc
-                </span>
-                <span *ngIf="node.data.securePDF" class="detail-item">
-                  <i class="pi pi-lock"></i> Secure PDF
-                </span>
-              </div>
-
-              <!-- Reminder Details -->
-              <div *ngSwitchCase="'reminder'" class="details-container">
-                <span class="detail-item">
-                  <i class="pi pi-bell"></i> {{node.data.content}}
-                </span>
-              </div>
-            </ng-container>
-          </div>
-          <div class="col-actions">
-            <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editNode(node)"></button>
-            <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-text" (click)="menu.toggle($event)"></button>
-          </div>
+            [(ngModel)]="selectedApplicationType"
+            placeholder="Select Application Type"
+            (onChange)="filterNodes()">
+          </p-dropdown>
+          <button pButton type="button" label="Reset" class="p-button-text" (click)="resetFilters()"></button>
         </div>
-    </ng-template>
-    </p-tree>
+      </div>
+      <div class="right-section">
+  <p-fileUpload 
+    mode="basic"
+          chooseLabel="Upload JSON" 
+    [auto]="true"
+          accept=".json" 
+          (onSelect)="onFileUpload($event)">
+  </p-fileUpload>
+        <button pButton type="button" label="View/Edit JSON" (click)="openJsonEditor()"></button>
+        <button pButton type="button" label="Download" [disabled]="!treeData.length" (click)="downloadJson()"></button>
+        <button pButton type="button" label="Add Node" icon="pi pi-plus" (click)="addNode()"></button>
+      </div>
+    </div>
+
+    <!-- Table with header and data -->
+    <div class="table-content">
+      <div class="table-header">
+        <div></div>
+        <div>Type</div>
+        <div>Name</div>
+        <div>Details</div>
+        <div>Actions</div>
+      </div>
+
+      <div class="table-body">
+        <p-tree [value]="filterNodes()" 
+                [filter]="false"
+                [filterBy]="'name'">
+          <ng-template pTemplate="default" let-node>
+            <div class="tree-node-row">
+              <div class="tree-toggler">
+                <!-- Tree toggler will be placed here automatically -->
+              </div>
+              
+              <div class="col-type">
+                <span [ngSwitch]="node.data._type || node.data.type">
+                  <span class="state-badge" *ngSwitchCase="'state'">
+                    <i class="pi pi-circle-fill"></i>
+                    <span>State</span>
+                  </span>
+                  <span class="transition-badge" *ngSwitchCase="'transition'">
+                    <i class="pi pi-arrow-right"></i>
+                    <span>Transition</span>
+                  </span>
+                  <span class="action-badge" *ngSwitchCase="'action'">
+                    <i class="pi pi-cog"></i>
+                    <span>{{node.data.actionType || 'Action'}}</span>
+                  </span>
+                  <span class="template-badge" *ngSwitchCase="'template'">
+                    <i class="pi pi-file"></i>
+                    <span>Template</span>
+                  </span>
+                  <span class="reminder-badge" *ngSwitchCase="'reminder'">
+                    <i class="pi pi-clock"></i>
+                    <span>Reminder</span>
+                  </span>
+                </span>
+              </div>
+
+              <div class="col-name">
+                <span class="node-name" [title]="node.data.name">{{node.data.name}}</span>
+              </div>
+
+              <div class="col-details">
+                <div class="details-container">
+                  <ng-container [ngSwitch]="node.data._type || node.data.type">
+                    <!-- State Details -->
+                    <div class="details-group" *ngSwitchCase="'state'">
+                      <span class="detail-item" *ngIf="node.data.idleDays">
+                        <i class="pi pi-calendar"></i>
+                        {{node.data.idleDays}} days
+                      </span>
+                      <span class="detail-item" *ngIf="node.data.assignedStaff">
+                        <i class="pi pi-user"></i>
+                        {{node.data.assignedStaff}}
+                      </span>
+                    </div>
+
+                    <!-- Transition Details -->
+                    <div *ngSwitchCase="'transition'" class="details-container">
+                      <span *ngIf="node.data.next" class="detail-item">
+                        <i class="pi pi-arrow-right"></i> {{node.data.next}}
+                      </span>
+                      <span *ngIf="node.data.selectAttachment" class="detail-item">
+                        <i class="pi pi-paperclip"></i> Requires Attachment
+                      </span>
+                    </div>
+
+                    <!-- Action Details -->
+                    <div *ngSwitchCase="'action'" class="details-container">
+                      <ng-container [ngSwitch]="node.data.actionType">
+                        <div *ngSwitchCase="'email'" class="details-group">
+                          <span class="detail-item"><i class="pi pi-envelope"></i> {{node.data.addressee?.join(', ')}}</span>
+                          <span *ngIf="node.data.subject" class="detail-item"><i class="pi pi-info-circle"></i> {{node.data.subject}}</span>
+                          <span *ngIf="node.data.previewOnly" class="detail-item"><i class="pi pi-eye"></i> Preview Only</span>
+                        </div>
+                        <div *ngSwitchCase="'sms'" class="details-group">
+                          <span class="detail-item"><i class="pi pi-mobile"></i> {{node.data.addressee?.join(', ')}}</span>
+                          <span *ngIf="node.data.content" class="detail-item"><i class="pi pi-comment"></i> {{node.data.content}}</span>
+                        </div>
+                        <div *ngSwitchCase="'task'" class="details-group">
+                          <span class="detail-item"><i class="pi pi-user"></i> {{node.data.addressee?.join(', ')}}</span>
+                          <span *ngIf="node.data.isReviewable" class="detail-item"><i class="pi pi-check-square"></i> Reviewable</span>
+                        </div>
+                        <div *ngSwitchCase="'document'" class="details-group">
+                          <span class="detail-item"><i class="pi pi-file"></i> {{node.data.docType}}</span>
+                          <span *ngIf="node.data.documentFolder" class="detail-item">
+                            <i class="pi pi-folder"></i> {{node.data.documentFolder}}
+                          </span>
+                          <span *ngIf="node.data.access" class="detail-item">
+                            <i class="pi pi-lock"></i> {{node.data.access}}
+                          </span>
+                        </div>
+                        <div *ngSwitchCase="'decision'" class="details-group">
+                          <span class="detail-item"><i class="pi pi-check-circle"></i> {{node.data.decisionType}}</span>
+                          <span *ngIf="node.data.commencedBy" class="detail-item">
+                            <i class="pi pi-calendar"></i> Commenced: {{node.data.commencedBy}} days
+                          </span>
+                          <span *ngIf="node.data.completedBy" class="detail-item">
+                            <i class="pi pi-calendar-times"></i> Completed: {{node.data.completedBy}} days
+                          </span>
+                          <span *ngIf="node.data.costOfDevelopment" class="detail-item">
+                            <i class="pi pi-dollar"></i> {{node.data.costOfDevelopment}}
+                          </span>
+                        </div>
+                      </ng-container>
+                    </div>
+
+                    <!-- Template Details -->
+                    <div *ngSwitchCase="'template'" class="details-container">
+                      <span *ngIf="node.data.saveToRelatedDoc" class="detail-item">
+                        <i class="pi pi-save"></i> Save to Related Doc
+                      </span>
+                      <span *ngIf="node.data.securePDF" class="detail-item">
+                        <i class="pi pi-lock"></i> Secure PDF
+                      </span>
+                    </div>
+
+                    <!-- Reminder Details -->
+                    <div *ngSwitchCase="'reminder'" class="details-container">
+                      <span class="detail-item">
+                        <i class="pi pi-bell"></i> {{node.data.content}}
+                      </span>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="col-actions">
+                <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="startEdit(node)"></button>
+                <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-text" [pTooltip]="'More options'"></button>
+              </div>
+            </div>
+          </ng-template>
+        </p-tree>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -167,11 +203,11 @@
              style="width: 100%">
     </div>
   </div>
-  
+
   <ng-template pTemplate="footer">
     <button pButton label="Cancel" class="p-button-text" (click)="cancelAddNode()"></button>
     <button pButton label="Add" class="p-button-primary" (click)="addNode()"></button>
-  </ng-template>
+    </ng-template>
 </p-dialog>
 
 <!-- Edit Node Dialog -->
@@ -338,7 +374,7 @@
         <div class="p-field">
           <label>Building Part</label>
           <input pInputText [(ngModel)]="editForm.OPBuildingPart" class="p-inputtext-lg" style="width: 100%">
-        </div>
+              </div>
 
         <div class="p-field">
           <label>Combine Allotment</label>
@@ -346,7 +382,7 @@
                      [(ngModel)]="editForm.isCombineAllotment"
                      [style]="{'width': '100%'}">
           </p-dropdown>
-        </div>
+          </div>
 
         <div class="p-field">
           <label>Is Subdivision</label>

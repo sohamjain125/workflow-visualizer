@@ -290,165 +290,496 @@
 }
 
 .workflow-container {
-  padding: 1rem;
-  
-  .header-section {
-    margin-bottom: 1rem;
-    
-    h2 {
-      margin: 0 0 1rem 0;
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-  }
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 4rem);
 
-  .table-toolbar {
+  .header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background-color: #f8f9fa;
-    border-radius: 4px;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 
-    .search-section {
+    .workflow-info {
+      h2 {
+        margin: 0;
+        color: #1565c0;
+        font-size: 1.75rem;
+        font-weight: 600;
+      }
+
+      .metadata {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #f5f9ff;
+        border-radius: 6px;
+        border: 1px solid #e3f2fd;
+
+        p {
+          margin: 0;
+          font-size: 0.9rem;
+          color: #546e7a;
+
+          strong {
+            color: #1565c0;
+            font-weight: 500;
+            margin-right: 0.5rem;
+          }
+        }
+      }
+    }
+
+    .actions-section {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      flex: 1;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid #e0e0e0;
 
-      .p-input-icon-left {
-        width: 100%;
+      ::ng-deep {
+        .p-fileupload-buttonbar {
+          padding: 0;
+          background: none;
+          border: none;
+        }
+
+        .p-button {
+          &.p-fileupload-choose {
+            background-color: #1565c0;
+            
+            &:hover {
+              background-color: #1976d2;
+            }
+          }
+        }
+      }
+    }
+
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+
+      .search-box {
+        flex: 1;
         max-width: 300px;
+
+        ::ng-deep {
+          .p-inputtext {
+            width: 100%;
+            padding-left: 2.5rem;
+          }
+
+          .pi-search {
+            left: 0.75rem;
+            color: #757575;
+          }
+        }
       }
 
-      input {
-        width: 100%;
-      }
-
-      p-dropdown {
-        min-width: 200px;
+      ::ng-deep {
+        .p-dropdown {
+          min-width: 200px;
+        }
       }
     }
+  }
 
-    .action-buttons {
+  .states-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+    .table-toolbar {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 0.5rem;
+      padding: 1rem;
+      background-color: #ffffff;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
 
-      button {
+      .left-section {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+
+        h3 {
+          margin: 0;
+          color: #1565c0;
+          font-size: 1.25rem;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .search-section {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+
+          .p-input-icon-left {
+            width: 250px;
+
+            input {
+              width: 100%;
+              padding-left: 2.5rem;
+            }
+
+            i {
+              left: 0.75rem;
+              color: #666;
+            }
+          }
+
+          ::ng-deep {
+            .p-dropdown {
+              min-width: 200px;
+            }
+          }
+        }
+      }
+
+      .right-section {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        
-        i {
-          font-size: 1rem;
-        }
-      }
-    }
-  }
 
-  .table-section {
-    background: white;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-
-    .table-header {
-      display: grid;
-      grid-template-columns: 42px 150px 250px 1fr 100px;
-      padding: 0.75rem;
-      background-color: #f8f9fa;
-      border-bottom: 1px solid #dee2e6;
-      font-weight: 600;
-      
-      > div {
-        display: flex;
-        align-items: center;
-      }
-    }
-  }
-
-  .tree-node-row {
-    display: grid;
-    grid-template-columns: 42px 150px 250px 1fr 100px;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
-
-    &:hover {
-      background-color: #f8f9fa;
-    }
-
-    .col-type {
-      .node-type {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.25rem 0.75rem;
-        border-radius: 1rem;
-        font-size: 0.875rem;
-        
-        i {
-          font-size: 1rem;
-        }
-      }
-
-      .state-badge {
-        background-color: #e3f2fd;
-        color: #1976d2;
-      }
-
-      .transition-badge {
-        background-color: #fdf2e3;
-        color: #ed6c02;
-      }
-
-      .action-badge {
-        background-color: #e8f5e9;
-        color: #2e7d32;
-      }
-    }
-
-    .col-name {
-      .node-name {
-        font-weight: 500;
-      }
-    }
-
-    .col-details {
-      .details-group {
-        display: flex;
-        gap: 1rem;
-      }
-
-      .detail-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        color: #666;
-        font-size: 0.875rem;
-
-        i {
-          font-size: 1rem;
+        ::ng-deep {
+          .p-fileupload-buttonbar {
+            padding: 0;
+            background: none;
+            border: none;
+          }
         }
       }
     }
 
-    .col-actions {
-      display: flex;
-      gap: 0.25rem;
+    .table-content {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+
+      .table-header {
+        display: grid;
+        grid-template-columns: 42px 150px 250px 1fr 100px;
+        background-color: #f8f9fa;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        color: #37474f;
+        border-bottom: 1px solid #e0e0e0;
+
+        > div {
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      .table-body {
+        background-color: #ffffff;
+
+        ::ng-deep {
+          .p-tree {
+            border: none;
+            padding: 0;
+            background: transparent;
+
+            .p-tree-container {
+              .p-treenode {
+                padding: 0;
+                margin: 0;
+
+                .p-treenode-content {
+                  border: none;
+                  padding: 0;
+                  margin: 0;
+
+                  &:hover {
+                    background: none;
+                  }
+
+                  .p-tree-toggler {
+                    width: 2rem;
+                    height: 2rem;
+                    color: #666;
+                    border-radius: 4px;
+                    margin: 0;
+
+                    &:hover {
+                      background-color: #f0f0f0;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
 
-:host ::ng-deep {
-  .p-tree {
-    border: none;
-    padding: 0;
-    
-    .p-tree-container {
-      padding: 0;
+.tree-node-row {
+  display: grid;
+  grid-template-columns: 42px 150px 250px 1fr 100px;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: white;
+  transition: all 0.2s;
+  align-items: center;
+
+  &:hover {
+    background-color: #f5f9ff;
+  }
+
+  > div {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .col-type {
+    .state-badge,
+    .transition-badge,
+    .action-badge,
+    .template-badge,
+    .reminder-badge {
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+
+      i {
+        font-size: 1rem;
+      }
     }
   }
+
+  .col-name {
+    .node-name {
+      font-weight: 500;
+      color: #37474f;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .col-details {
+    .details-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      
+      .detail-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background-color: #f5f9ff;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        color: #546e7a;
+        border: 1px solid #e3f2fd;
+
+        i {
+          color: #1565c0;
+          font-size: 0.9rem;
+        }
+      }
+    }
+  }
+
+  .col-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+
+    ::ng-deep {
+      .p-button.p-button-text {
+        padding: 0.5rem;
+        color: #666;
+
+        &:hover {
+          background-color: #f0f0f0;
+          color: #1565c0;
+        }
+
+        .p-button-icon {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+.details-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.details-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.detail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background-color: #f5f9ff;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #546e7a;
+  border: 1px solid #e3f2fd;
+  white-space: nowrap;
+
+  i {
+    color: #1565c0;
+    font-size: 0.9rem;
+  }
+}
+
+.state-badge,
+.transition-badge,
+.action-badge,
+.template-badge,
+.reminder-badge {
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  width: fit-content;
+  min-width: 90px;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.state-badge {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.transition-badge {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.action-badge {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.template-badge {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.reminder-badge {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+.node-name {
+  font-weight: 500;
+  color: #37474f;
+}
+
+.node-detail {
+  color: #546e7a;
+  font-size: 0.9rem;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .p-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 500;
+      color: #37474f;
+    }
+
+    ::ng-deep {
+      .p-inputtext,
+      .p-dropdown,
+      .p-multiselect {
+        width: 100%;
+      }
+
+      .p-inputtextarea {
+        min-height: 100px;
+        resize: vertical;
+      }
+    }
+  }
+}
+
+.json-editor {
+  .json-textarea {
+    font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 1rem;
+    min-height: 400px;
+    width: 100%;
+    resize: vertical;
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+  }
+}
+
+.add-node-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .p-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 500;
+      color: #37474f;
+    }
+  }
+}
+
+.upload-section {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
 }

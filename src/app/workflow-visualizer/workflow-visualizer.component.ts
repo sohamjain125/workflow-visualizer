@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { TreeNode, MenuItem, MessageService } from 'primeng/api';
 import { FileUpload } from 'primeng/fileupload';
-import { Menu } from 'primeng/menu';
 
 interface EditForm {
   // Common properties
@@ -46,10 +45,6 @@ interface EditForm {
   saveToRelatedDoc?: boolean;
   securePDF?: boolean;
   templates?: any[];
-
-  // New properties
-  details?: string;
-  conditions?: string[];
 }
 
 @Component({
@@ -59,11 +54,14 @@ interface EditForm {
 })
 export class WorkflowVisualizerComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
-  @ViewChild('menu') menu!: Menu;
   
   searchText: string = '';
-  selectedApplicationType: string | null = null;
-  applicationTypes: any[] = [];
+  applicationTypes: any[] = [
+    { label: 'All', value: null },
+    { label: 'Type1', value: 'type1' },
+    { label: 'Type2', value: 'type2' }
+  ];
+  applicationType: any = null;
   loading: boolean = false;
   fileUploaded: boolean = false;
   editingKey: string | null = null;
@@ -75,10 +73,8 @@ export class WorkflowVisualizerComponent implements OnInit {
   editDialogVisible: boolean = false;
   editForm: EditForm = {
     name: '',
-    type: '',
     actionType: '',
-    details: '',
-    conditions: []
+    addressee: []
   };
 
   actionTypes: any[] = [
@@ -107,8 +103,8 @@ export class WorkflowVisualizerComponent implements OnInit {
   ];
 
   booleanOptions: any[] = [
-    { label: 'Yes', value: true },
-    { label: 'No', value: false }
+    { label: 'True', value: true },
+    { label: 'False', value: false }
   ];
 
   showAddNodeDialog: boolean = false;
@@ -126,19 +122,13 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   // Add missing properties
   preApplicationInitialStatus: string = '';
-
-  // Add missing property
-  treeNodes: TreeNode[] = [];
+  selectedApplicationType: string = '';
 
   constructor(private messageService: MessageService) {
     this.initializeSampleData();
   }
 
-  ngOnInit() {
-    this.loadApplicationTypes();
-    this.loadAddresseeOptions();
-    this.treeNodes = this.treeData; // Initialize treeNodes from treeData
-  }
+  ngOnInit() {}
 
   initializeSampleData() {
     this.treeData = [
@@ -173,19 +163,18 @@ export class WorkflowVisualizerComponent implements OnInit {
         children: []
       }
     ];
-    this.treeNodes = this.treeData; // Initialize treeNodes
   }
 
   getFilteredData(): TreeNode[] {
-    if (!this.searchText && !this.selectedApplicationType) {
+    if (!this.searchText && !this.applicationType) {
       return this.treeData;
     }
 
     return this.treeData.filter(node => {
       const matchesSearch = !this.searchText || 
         JSON.stringify(node.data).toLowerCase().includes(this.searchText.toLowerCase());
-      const matchesType = !this.selectedApplicationType || 
-        node.data.type === this.selectedApplicationType;
+      const matchesType = !this.applicationType || 
+        node.data.type === this.applicationType;
       return matchesSearch && matchesType;
     });
   }
@@ -229,11 +218,7 @@ export class WorkflowVisualizerComponent implements OnInit {
 
       // Template properties
       saveToRelatedDoc: node.data.saveToRelatedDoc === 'true',
-      securePDF: node.data.securePDF === 'true',
-
-      // New properties
-      details: node.data.details,
-      conditions: node.data.conditions
+      securePDF: node.data.securePDF === 'true'
     };
     this.editDialogVisible = true;
   }
@@ -277,140 +262,206 @@ export class WorkflowVisualizerComponent implements OnInit {
 
         // Template properties
         saveToRelatedDoc: this.editForm.saveToRelatedDoc?.toString(),
-        securePDF: this.editForm.securePDF?.toString(),
-
-        // New properties
-        details: this.editForm.details,
-        conditions: this.editForm.conditions
-      };
-      this.editDialogVisible = false;
-      this.selectedNode = null;
-      this.editForm = {
-        name: '',
-        type: '',
-        actionType: '',
-        details: '',
-        conditions: []
+        securePDF: this.editForm.securePDF?.toString()
       };
     }
+    this.editDialogVisible = false;
+    this.selectedNode = null;
   }
 
   cancelEdit() {
     this.editDialogVisible = false;
     this.selectedNode = null;
-    this.editForm = {
-      name: '',
-      type: '',
-      actionType: '',
-      details: '',
-      conditions: []
-    };
   }
 
-  // Node adding
-  addNode() {
-    const newNode = {
-      label: this.newNodeForm.name,
-      data: {
-        type: this.newNodeForm.type,
-        name: this.newNodeForm.name
+  getMenuItems(node: TreeNode): MenuItem[] {
+    return [
+      {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: () => this.startEdit(node)
       },
-      children: []
+      {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => this.deleteNode(node)
+      }
+    ];
+  }
+
+  deleteNode(node: TreeNode) {
+    const removeFromParent = (parent: TreeNode[], target: TreeNode) => {
+      const index = parent.indexOf(target);
+      if (index > -1) {
+        parent.splice(index, 1);
+      }
     };
-    this.treeData.push(newNode);
-    this.showAddNodeDialog = false;
-    this.newNodeForm = { name: '', type: '' };
+
+    if (node.parent) {
+      removeFromParent(node.parent.children || [], node);
+    } else {
+      removeFromParent(this.treeData, node);
+    }
   }
 
-  cancelAddNode() {
-    this.showAddNodeDialog = false;
-    this.newNodeForm = { name: '', type: '' };
-  }
-
-  // Filter handling
   resetFilters() {
     this.searchText = '';
-    this.selectedApplicationType = null;
+    this.applicationType = null;
+    this.clearData();
   }
 
-  // Helper methods
-  private loadApplicationTypes() {
-    // Load application types from your data source
-    this.applicationTypes = [
-      { label: 'Type 1', value: 'type1' },
-      { label: 'Type 2', value: 'type2' }
-    ];
-  }
-
-  private loadAddresseeOptions() {
-    // Load addressee options from your data source
-    this.addresseeOptions = [
-      { label: 'User 1', value: 'user1' },
-      { label: 'User 2', value: 'user2' }
-    ];
-  }
-
-  private transformToTreeNodes(json: any): TreeNode[] {
-    console.log('Transforming JSON to tree nodes:', json); // Debug log
-    
-    if (!Array.isArray(json)) {
-      json = [json];
-    }
-
-    const nodes = json.map((node: any) => {
-      const treeNode: TreeNode = {
-        label: node.name || node.label || '',
-        data: {
-          ...node,
-          type: node._type || node.type || 'unknown',
-          name: node.name || node.label || ''
-        },
-        children: node.children ? this.transformToTreeNodes(node.children) : undefined
-      };
-      return treeNode;
-    });
-    
-    console.log('Transformed nodes:', nodes); // Debug log
-    return nodes;
-  }
-
-  // Download functionality
-  downloadJson() {
-    const json = JSON.stringify(this.treeData, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'workflow.json';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  // Add missing methods
-  onUpload(event: any) {
-    console.log('Upload event received:', event); // Debug log
-    
-    if (event.files && event.files.length > 0) {
-      const file = event.files[0];
-      console.log('File to process:', file); // Debug log
+  loadWorkflow(jsonData: any) {
+    try {
+      console.log('Loading workflow data:', jsonData);
       
+      if (jsonData.state) {
+        // Store workflow metadata
+        this.workflowName = jsonData._name || '';
+        this.initialStatus = jsonData._initialStatus || '';
+        this.emailAdmin = jsonData._EmailAdmin || '';
+        this.smsAdmin = jsonData._SMSAdmin || '';
+        this.preAppInitStatus = jsonData._PreAppInitStatus || '';
+
+    const states = jsonData.state;
+        this.treeData = states.map((state: any) => {
+          return {
+            data: {
+              type: 'state',
+              name: state._name || 'Unnamed State',
+              idleDays: state._IdleDays || '',
+              assignedStaff: state._assignedStaff || ''
+            },
+            children: this.mapTransitions(state.transition || [])
+          };
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `Loaded ${states.length} states successfully`
+        });
+      } else {
+        throw new Error('Invalid workflow format: missing state property');
+      }
+    } catch (error) {
+      console.error('Error loading workflow:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to parse workflow data'
+      });
+    }
+  }
+
+  private mapTransitions(transitions: any[]): TreeNode[] {
+    if (!transitions) return [];
+    
+    return transitions.map((transition: any) => {
+      const node: TreeNode = {
+        data: {
+          type: 'transition',
+          name: transition._input || 'Unnamed Transition',
+          input: transition._input || '',
+          next: transition._next || '',
+          selectAttachment: transition._selectAttachment === 'true'
+        },
+        children: []
+      };
+
+      let nodeChildren: TreeNode[] = [];
+
+      // Add actions if present
+      if (transition.action) {
+        const actionNodes: TreeNode[] = [];
+        
+        transition.action.forEach((action: any) => {
+          // Handle regular action
+          const actionNode = this.createActionNode(action);
+          if (!actionNode.children) actionNode.children = [];
+          actionNodes.push(actionNode);
+
+          // Handle letter templates if present
+          if (action.letters?.template) {
+            const templates = Array.isArray(action.letters.template) ? 
+              action.letters.template : [action.letters.template];
+            
+            templates.forEach((template: any) => {
+              actionNodes.push({
+                data: {
+                  type: 'template',
+                  name: template._name || 'Unnamed Template',
+                  saveToRelatedDoc: template._saveToRelatedDoc === 'true',
+                  securePDF: template._securePDF === 'true'
+                },
+                children: []
+              });
+            });
+          }
+        });
+
+        nodeChildren = actionNodes;
+      }
+
+      // Add reminders if present
+      if (transition.reminder) {
+        const reminders = Array.isArray(transition.reminder) ? 
+          transition.reminder : [transition.reminder];
+        
+        const reminderNodes = reminders.map((reminder: any) => ({
+          data: {
+            type: 'reminder',
+            name: reminder._content || 'Unnamed Reminder',
+            content: reminder._content
+          },
+          children: []
+        }));
+
+        nodeChildren = nodeChildren.concat(reminderNodes);
+      }
+
+      node.children = nodeChildren;
+      return node;
+    });
+  }
+
+  private createActionNode(action: any): TreeNode {
+    return {
+      data: {
+        type: 'action',
+        name: action._template || action._content || 'Unnamed Action',
+        actionType: action._type || '',
+        addressee: action._addressee ? action._addressee.split(',') : [],
+        subject: action._subject || '',
+        template: action._template || '',
+        content: action._content || '',
+        isReviewable: action._isReviewable === 'true',
+        previewOnly: action._previewOnly === 'true',
+        access: action._access || '',
+        documentFolder: action._documentFolder || '',
+        docType: action._docType || '',
+        mailMergeDataSource: action._mailMergeDataSource || '',
+        decisionType: action._decisionType || '',
+        commencedBy: action._commencedBy || '',
+        completedBy: action._completedBy || '',
+        isCombineAllotment: action._isCombineAllotment === 'true',
+        isSubdivision: action._isSubdivision === 'true',
+        displayLocation: action._displayLocation || '',
+        costOfDevelopment: action._costOfDevelopment || '',
+        OPBuildingPart: action._OPBuildingPart || ''
+      }
+    };
+  }
+
+  onFileUpload(event: any) {
+    if (event.currentFiles && event.currentFiles.length > 0) {
+      const file = event.currentFiles[0];
       const reader = new FileReader();
+      
       reader.onload = (e: any) => {
         try {
           const json = JSON.parse(e.target.result);
           console.log('Parsed JSON:', json); // Debug log
-          
-          // Transform the JSON into tree nodes
-          const transformedData = this.transformToTreeNodes(json);
-          console.log('Transformed data:', transformedData); // Debug log
-          
-          // Update both treeData and treeNodes
-          this.treeData = transformedData;
-          this.treeNodes = transformedData;
-          
-          // Force change detection
-          this.treeNodes = [...this.treeNodes];
-          
+          this.loadWorkflow(json);
           this.messageService.add({
             severity: 'success',
             summary: 'Success',
@@ -425,24 +476,121 @@ export class WorkflowVisualizerComponent implements OnInit {
           });
         }
       };
+
+      reader.onerror = (e) => {
+        console.error('Error reading file:', e);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to read file'
+        });
+      };
+
       reader.readAsText(file);
     }
   }
 
-  showJsonDialog() {
-    this.jsonEditorContent = JSON.stringify(this.treeNodes, null, 2);
+  onFileClear() {
+    this.clearData();
+  }
+
+  downloadJson() {
+    try {
+      // Convert the tree data back to the original format
+      const downloadData = {
+        _name: "BuildingPermit",
+        state: this.treeData.map(stateNode => {
+          const state: any = {
+            _name: stateNode.data.name,
+            _IdleDays: stateNode.data.idleDays || ""
+          };
+
+          if (stateNode.children && stateNode.children.length > 0) {
+            state.transition = stateNode.children.map(transNode => {
+              const trans: any = {
+                _input: transNode.data.name,
+                _next: transNode.data.next,
+                _selectAttachment: transNode.data.selectAttachment
+              };
+
+              if (transNode.children && transNode.children.length > 0) {
+                trans.action = [];
+                trans.reminder = [];
+
+                transNode.children.forEach(child => {
+                  if (child.data.type === 'action') {
+                    const action: any = {
+                      _type: child.data.actionType,
+                      _addressee: child.data.addressee,
+                      _template: child.data.name,
+                      _subject: child.data.subject,
+                      _isReviewable: child.data.isReviewable,
+                      _documentFolder: child.data.documentFolder,
+                      _docType: child.data.docType
+                    };
+                    trans.action.push(action);
+                  } else if (child.data.type === 'template') {
+                    if (!trans.action[0]) trans.action[0] = {};
+                    if (!trans.action[0].letters) trans.action[0].letters = { template: [] };
+                    trans.action[0].letters.template.push({
+                      _name: child.data.name,
+                      _saveToRelatedDoc: child.data.saveToRelatedDoc,
+                      _securePDF: child.data.securePDF
+                    });
+                  } else if (child.data.type === 'reminder') {
+                    trans.reminder.push({
+                      _content: child.data.name
+                    });
+                  }
+                });
+              }
+              return trans;
+            });
+          }
+          return state;
+        })
+      };
+
+      const jsonData = JSON.stringify(downloadData, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'workflow.json';
+      document.body.appendChild(link);
+    link.click();
+      document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Workflow downloaded successfully'
+      });
+    } catch (error) {
+      console.error('Error downloading JSON:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to download workflow'
+      });
+    }
+  }
+
+  openJsonEditor() {
+    this.jsonEditorContent = JSON.stringify(this.treeData, null, 2);
     this.showJsonEditor = true;
   }
 
   closeJsonEditor() {
     this.showJsonEditor = false;
+    this.jsonEditorContent = '';
   }
 
   applyJsonChanges() {
     try {
       const newData = JSON.parse(this.jsonEditorContent);
-      this.treeData = this.transformToTreeNodes(newData);
-      this.treeNodes = this.treeData;
+      this.loadWorkflow(newData);
       this.showJsonEditor = false;
       this.messageService.add({
         severity: 'success',
@@ -458,108 +606,93 @@ export class WorkflowVisualizerComponent implements OnInit {
     }
   }
 
-  getNodeIcon(node: TreeNode): string {
-    const type = node.data?._type || node.data?.type;
-    switch (type?.toLowerCase()) {
-      case 'action':
-        return 'pi pi-cog';
-      case 'condition':
-        return 'pi pi-question-circle';
-      case 'state':
-        return 'pi pi-circle';
-      default:
-        return 'pi pi-circle';
+  clearData() {
+    this.treeData = [];
+    this.fileUploaded = false;
+    // Reset the file upload component
+    const fileUpload = document.querySelector('p-fileUpload') as any;
+    if (fileUpload?.clear) {
+      fileUpload.clear();
     }
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Reset',
+      detail: 'All data has been cleared'
+    });
   }
 
-  getNodeType(node: TreeNode): string {
-    return node.data?._type || node.data?.type || 'Unknown';
-  }
-
-  editNode(node: TreeNode) {
-    this.selectedNode = node;
-    this.editForm = {
-      name: node.data.name,
-      type: node.data.type,
-      idleDays: node.data.idleDays,
-      assignedStaff: node.data.assignedStaff,
-      
-      // Action properties
-      actionType: node.data.actionType,
-      addressee: Array.isArray(node.data.addressee) ? node.data.addressee : 
-                (node.data.addressee ? node.data.addressee.split(',').map((a: string) => a.trim()) : []),
-      subject: node.data.subject,
-      template: node.data.template,
-      content: node.data.content,
-      isReviewable: node.data.isReviewable === 'true',
-      previewOnly: node.data.previewOnly === 'true',
-      access: node.data.access,
-      documentFolder: node.data.documentFolder,
-      docType: node.data.docType,
-      mailMergeDataSource: node.data.mailMergeDataSource,
-
-      // Decision properties
-      decisionType: node.data.decisionType,
-      commencedBy: node.data.commencedBy,
-      completedBy: node.data.completedBy,
-      isCombineAllotment: node.data.isCombineAllotment === 'true',
-      isSubdivision: node.data.isSubdivision === 'true',
-      displayLocation: node.data.displayLocation,
-      costOfDevelopment: node.data.costOfDevelopment,
-      OPBuildingPart: node.data.OPBuildingPart,
-
-      // Transition properties
-      input: node.data.input,
-      next: node.data.next,
-      selectAttachment: node.data.selectAttachment === 'true',
-
-      // Template properties
-      saveToRelatedDoc: node.data.saveToRelatedDoc === 'true',
-      securePDF: node.data.securePDF === 'true',
-
-      // New properties
-      details: node.data.details,
-      conditions: node.data.conditions
+  addNode() {
+    const newNode: TreeNode = {
+      data: {
+        type: this.newNodeForm.type,
+        name: this.newNodeForm.name
+      },
+      children: []
     };
-    this.editDialogVisible = true;
+
+    if (this.selectedNode) {
+      // If a node is selected, add as child if it's a state or transition
+      if (this.selectedNode.data.type === 'state') {
+        if (!this.selectedNode.children) {
+          this.selectedNode.children = [];
+        }
+        this.selectedNode.children.push(newNode);
+      } else if (this.selectedNode.data.type === 'transition') {
+        if (!this.selectedNode.children) {
+          this.selectedNode.children = [];
+        }
+        this.selectedNode.children.push(newNode);
+      }
+    } else {
+      // If no node is selected and it's a state, add to root level
+      if (this.newNodeForm.type === 'state') {
+        this.treeData.push(newNode);
+      } else {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Warning',
+          detail: 'Please select a parent node first'
+        });
+        return;
+      }
+    }
+
+    this.showAddNodeDialog = false;
+    this.newNodeForm = { name: '', type: '' };
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Node added successfully'
+    });
   }
 
   openAddNodeDialog() {
     this.showAddNodeDialog = true;
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        try {
-          const json = JSON.parse(e.target.result);
-          console.log('Parsed JSON:', json);
-          
-          // Transform the JSON into tree nodes
-          const transformedData = this.transformToTreeNodes(json);
-          console.log('Transformed data:', transformedData);
-          
-          // Update both treeData and treeNodes
-          this.treeData = transformedData;
-          this.treeNodes = [...transformedData];
-          
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'File uploaded successfully'
-          });
-        } catch (error) {
-          console.error('Error parsing JSON:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Invalid JSON file'
-          });
-        }
-      };
-      reader.readAsText(file);
+  cancelAddNode() {
+    this.showAddNodeDialog = false;
+    this.newNodeForm = { name: '', type: '' };
+  }
+
+  // Add missing method
+  filterNodes() {
+    // If there's no search text or selected type, return all nodes
+    if (!this.searchText && !this.selectedApplicationType) {
+      return this.treeData;
     }
+
+    // Filter nodes based on search text and selected type
+    const filteredData = this.treeData.filter(node => {
+      const matchesSearch = !this.searchText || 
+        node.data.name.toLowerCase().includes(this.searchText.toLowerCase());
+      
+      const matchesType = !this.selectedApplicationType || 
+        node.data.type === this.selectedApplicationType;
+
+      return matchesSearch && matchesType;
+    });
+
+    return filteredData;
   }
 }

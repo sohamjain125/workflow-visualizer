@@ -78,10 +78,6 @@
                     <i class="pi pi-file"></i>
                     <span>Template</span>
                   </span>
-                  <span class="reminder-badge" *ngSwitchCase="'reminder'">
-                    <i class="pi pi-clock"></i>
-                    <span>Reminder</span>
-                  </span>
                 </span>
               </div>
 
@@ -163,21 +159,31 @@
                         <i class="pi pi-lock"></i> Secure PDF
                       </span>
                     </div>
-
-                    <!-- Reminder Details -->
-                    <div *ngSwitchCase="'reminder'" class="details-container">
-                      <span class="detail-item">
-                        <i class="pi pi-bell"></i> {{node.data.content}}
-                      </span>
-                    </div>
                   </ng-container>
                 </div>
               </div>
 
               <div class="col-actions">
-                <button pButton type="button" icon="pi pi-plus" class="p-button-text" (click)="openAddNodeDialog(node)" pTooltip="Add child node"></button>
-                <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="startEdit(node)"></button>
-                <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteNode(node)"></button>
+                <button pButton 
+                        type="button" 
+                        icon="pi pi-plus" 
+                        class="p-button-text" 
+                        (click)="openAddNodeDialog(node)" 
+                        pTooltip="Add child node"
+                        [disabled]="!getAvailableNodeTypes().length">
+                </button>
+                <button pButton 
+                        type="button" 
+                        icon="pi pi-pencil" 
+                        class="p-button-text" 
+                        (click)="startEdit(node)">
+                </button>
+                <button pButton 
+                        type="button" 
+                        icon="pi pi-trash" 
+                        class="p-button-text" 
+                        (click)="deleteNode(node)">
+                </button>
               </div>
             </div>
           </ng-template>

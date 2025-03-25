@@ -187,7 +187,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       parentTypes: []  // States can only be at root level
     },
     transition: {
-      allowedChildren: ['action', 'reminder'],
+      allowedChildren: ['action'],
       requiredFields: ['input', 'next'],
       parentTypes: ['state']
     },
@@ -803,54 +803,50 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
   }
 
-  private getEmptyNodeForm(): EditForm {
+  getEmptyNodeForm(): EditForm {
     return {
       name: '',
-      type: '',
-      idleDays: '',
-      input: '',
-      next: '',
       actionType: 'email',
-      addressee: [],
-      content: '',
-      selectAttachment: false
+      addressee: []
     };
   }
 
   getAvailableNodeTypes(): Array<{label: string, value: string}> {
-    // If no node is selected, we're at root level
     if (!this.selectedNode) {
-      // At root level, only allow states
-      return this.nodeTypes.filter(type => type.value === 'state');
+      // At root level, only allow State
+      return [{ label: 'State', value: 'state' }];
     }
 
-    // Get the parent type
-    const parentType = this.selectedNode.data.type;
+    const parentType = this.selectedNode.data._type || this.selectedNode.data.type;
+    const config = this.nodeTypeConfigs[parentType];
     
-    // Return node types that can be children of the selected node type
-    return this.nodeTypes.filter(type => {
-      const config = this.nodeTypeConfigs[type.value];
-      return config.parentTypes.includes(parentType);
-    });
+    if (!config) {
+      return [];
+    }
+
+    return config.allowedChildren.map(type => ({
+      label: type.charAt(0).toUpperCase() + type.slice(1),
+      value: type
+    }));
   }
 
   openAddNodeDialog(node?: TreeNode) {
-    this.showAddNodeDialog = true;
+    this.selectedNode = node || null;
     this.multiNodeForm = {
       type: '',
       nodes: [this.getEmptyNodeForm()]
     };
-    this.selectedNode = node || null;
+    this.showAddNodeDialog = true;
   }
 
-  // In your component class
-addNewNodeForm() {
-  const emptyForm = this.getEmptyNodeForm();
-  // Make sure these properties are properly initialized
-  emptyForm.template = '';
-  emptyForm.addressee = [];
-  this.multiNodeForm.nodes.push(emptyForm);
-}
+  addNewNodeForm() {
+    const emptyForm = this.getEmptyNodeForm();
+    // Make sure these properties are properly initialized
+    emptyForm.template = '';
+    emptyForm.addressee = [];
+    this.multiNodeForm.nodes.push(emptyForm);
+  }
+
   removeNodeForm(index: number) {
     if (this.multiNodeForm.nodes.length > 1) {
       this.multiNodeForm.nodes.splice(index, 1);

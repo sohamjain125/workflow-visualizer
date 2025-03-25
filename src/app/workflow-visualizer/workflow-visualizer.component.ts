@@ -125,6 +125,11 @@ interface EditForm {
   businessRules?: BusinessRule[];
 }
 
+interface MultiNodeForm {
+  type?: string;
+  nodes: EditForm[];
+}
+
 interface NodeTypeConfig {
   allowedChildren: string[];
   requiredFields: string[];
@@ -221,7 +226,10 @@ export class WorkflowVisualizerComponent implements OnInit {
   ];
 
   showAddNodeDialog: boolean = false;
-  newNodeForm: EditForm = this.getEmptyNodeForm();
+  multiNodeForm: MultiNodeForm = {
+    type: '',
+    nodes: []
+  };
 
   // Add workflow metadata properties
   workflowName: string = '';
@@ -793,12 +801,80 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
   }
 
-  validateNewNode(): { valid: boolean; message?: string } {
-    if (!this.newNodeForm.type) {
+  openAddNodeDialog(node?: TreeNode) {
+    this.showAddNodeDialog = true;
+    this.multiNodeForm = {
+      type: '',
+      nodes: [this.getEmptyNodeForm()]
+    };
+    this.selectedNode = node || null;
+  }
+
+  addNewNodeForm() {
+    this.multiNodeForm.nodes.push(this.getEmptyNodeForm());
+  }
+
+  removeNodeForm(index: number) {
+    if (this.multiNodeForm.nodes.length > 1) {
+      this.multiNodeForm.nodes.splice(index, 1);
+    }
+  }
+
+  addNodes() {
+    // Validate all nodes
+    for (const nodeForm of this.multiNodeForm.nodes) {
+      nodeForm.type = this.multiNodeForm.type;
+      const validation = this.validateNewNode(nodeForm);
+      if (!validation.valid) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Validation Error',
+          detail: validation.message
+        });
+        return;
+      }
+    }
+
+    // Add all nodes
+    for (const nodeForm of this.multiNodeForm.nodes) {
+      const newNode: TreeNode = {
+        data: {
+          type: nodeForm.type,
+          name: nodeForm.name || nodeForm.input || 'New Node',
+          ...this.getNodeSpecificData(nodeForm)
+        },
+        children: []
+      };
+
+      if (this.selectedNode) {
+        if (!this.selectedNode.children) {
+          this.selectedNode.children = [];
+        }
+        this.selectedNode.children.push(newNode);
+      } else {
+        this.treeData.push(newNode);
+      }
+    }
+
+    this.showAddNodeDialog = false;
+    this.multiNodeForm = {
+      type: '',
+      nodes: []
+    };
+    this.selectedNode = null;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `Added ${this.multiNodeForm.nodes.length} nodes successfully`
+    });
+  }
+
+  validateNewNode(nodeForm: EditForm): { valid: boolean; message?: string } {
+    if (!nodeForm.type) {
       return { valid: false, message: 'Please select a node type' };
     }
 
-    const config = this.nodeTypeConfigs[this.newNodeForm.type];
+    const config = this.nodeTypeConfigs[nodeForm.type];
     
     // Check if parent type is valid
     if (this.selectedNode) {
@@ -806,10 +882,10 @@ export class WorkflowVisualizerComponent implements OnInit {
       if (!config.parentTypes.includes(parentType)) {
         return { 
           valid: false, 
-          message: `${this.newNodeForm.type} cannot be added to ${parentType}` 
+          message: `${nodeForm.type} cannot be added to ${parentType}` 
         };
       }
-    } else if (this.newNodeForm.type !== 'state') {
+    } else if (nodeForm.type !== 'state') {
       return { 
         valid: false, 
         message: 'Only states can be added at the root level' 
@@ -818,11 +894,11 @@ export class WorkflowVisualizerComponent implements OnInit {
 
     // Check required fields
     for (const field of config.requiredFields) {
-      const value = this.newNodeForm[field as keyof EditForm];
+      const value = nodeForm[field as keyof EditForm];
       if (!value || (Array.isArray(value) && value.length === 0)) {
         return { 
           valid: false, 
-          message: `${field} is required for ${this.newNodeForm.type}` 
+          message: `${field} is required for ${nodeForm.type}` 
         };
       }
     }
@@ -830,89 +906,44 @@ export class WorkflowVisualizerComponent implements OnInit {
     return { valid: true };
   }
 
-  addNode() {
-    const validation = this.validateNewNode();
-    if (!validation.valid) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: validation.message
-      });
-      return;
-    }
-
-    const newNode: TreeNode = {
-      data: {
-        type: this.newNodeForm.type,
-        name: this.newNodeForm.name || this.newNodeForm.input || 'New Node',
-        ...this.getNodeSpecificData()
-      },
-      children: []
-    };
-
-    if (this.selectedNode) {
-      if (!this.selectedNode.children) {
-        this.selectedNode.children = [];
-      }
-      this.selectedNode.children.push(newNode);
-    } else {
-      this.treeData.push(newNode);
-    }
-
-    this.showAddNodeDialog = false;
-    this.newNodeForm = this.getEmptyNodeForm();
-    // Clear the selected node after adding
-    this.selectedNode = null;
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Node added successfully'
-    });
-  }
-
-  private getNodeSpecificData(): any {
+  private getNodeSpecificData(nodeForm: EditForm): any {
     const data: any = {};
     
-    switch (this.newNodeForm.type) {
+    switch (nodeForm.type) {
       case 'state':
-        data.idleDays = this.newNodeForm.idleDays;
+        data.idleDays = nodeForm.idleDays;
         break;
       case 'transition':
-        data.input = this.newNodeForm.input;
-        data.next = this.newNodeForm.next;
-        data.selectAttachment = this.newNodeForm.selectAttachment;
+        data.input = nodeForm.input;
+        data.next = nodeForm.next;
+        data.selectAttachment = nodeForm.selectAttachment;
         break;
       case 'action':
-        data.actionType = this.newNodeForm.actionType;
-        data.addressee = this.newNodeForm.addressee;
-        data.subject = this.newNodeForm.subject;
-        data.template = this.newNodeForm.template;
-        data.content = this.newNodeForm.content;
+        data.actionType = nodeForm.actionType;
+        data.addressee = nodeForm.addressee;
+        data.subject = nodeForm.subject;
+        data.template = nodeForm.template;
+        data.content = nodeForm.content;
         break;
       case 'reminder':
-        data.content = this.newNodeForm.content;
+        data.content = nodeForm.content;
         break;
       case 'template':
-        data.name = this.newNodeForm.name;
-        data.saveToRelatedDoc = this.newNodeForm.saveToRelatedDoc;
-        data.securePDF = this.newNodeForm.securePDF;
+        data.name = nodeForm.name;
+        data.saveToRelatedDoc = nodeForm.saveToRelatedDoc;
+        data.securePDF = nodeForm.securePDF;
         break;
     }
     
     return data;
   }
 
-  openAddNodeDialog(node?: TreeNode) {
-    this.showAddNodeDialog = true;
-    this.newNodeForm = this.getEmptyNodeForm();
-    // Store the currently selected node
-    this.selectedNode = node || null;
-  }
-
   cancelAddNode() {
     this.showAddNodeDialog = false;
-    this.newNodeForm = this.getEmptyNodeForm();
-    // Clear the selected node when canceling
+    this.multiNodeForm = {
+      type: '',
+      nodes: []
+    };
     this.selectedNode = null;
   }
 

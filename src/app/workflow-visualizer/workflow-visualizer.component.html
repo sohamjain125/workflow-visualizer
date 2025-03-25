@@ -81,24 +81,23 @@
               </div>
               
               <div class="col-type">
-                <span [ngSwitch]="node.data._type || node.data.type">
+                <ng-container [ngSwitch]="node.data._type || node.data.type">
                   <span class="state-badge" *ngSwitchCase="'state'">
-                    <i class="pi pi-circle-fill"></i>
-                    <span>State</span>
+                    <i class="pi pi-flag"></i> State
                   </span>
                   <span class="transition-badge" *ngSwitchCase="'transition'">
-                    <i class="pi pi-arrow-right"></i>
-                    <span>Transition</span>
+                    <i class="pi pi-arrow-right"></i> Transition
                   </span>
                   <span class="action-badge" *ngSwitchCase="'action'">
-                    <i class="pi pi-cog"></i>
-                    <span>{{node.data.actionType || 'Action'}}</span>
+                    <i class="pi pi-cog"></i> {{node.data.actionType || 'Action'}}
                   </span>
                   <span class="template-badge" *ngSwitchCase="'template'">
-                    <i class="pi pi-file"></i>
-                    <span>Template</span>
+                    <i class="pi pi-file"></i> Template
                   </span>
-                </span>
+                  <span class="reminder-badge" *ngSwitchCase="'reminder'">
+                    <i class="pi pi-bell"></i> Reminder
+                  </span>
+                </ng-container>
               </div>
 
               <div class="col-name">
@@ -170,8 +169,18 @@
                       </ng-container>
                     </div>
 
+                    <!-- Reminder Details -->
+                    <div *ngSwitchCase="'reminder'" class="details-container">
+                      <span class="detail-item">
+                        <i class="pi pi-bell"></i> {{node.data.content}}
+                      </span>
+                    </div>
+
                     <!-- Template Details -->
                     <div *ngSwitchCase="'template'" class="details-container">
+                      <span class="detail-item">
+                        <i class="pi pi-file-pdf"></i> {{node.data.name}}
+                      </span>
                       <span *ngIf="node.data.saveToRelatedDoc" class="detail-item">
                         <i class="pi pi-save"></i> Save to Related Doc
                       </span>

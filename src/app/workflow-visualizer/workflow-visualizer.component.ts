@@ -1,6 +1,81 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { TreeNode, MenuItem, MessageService } from 'primeng/api';
 import { FileUpload } from 'primeng/fileupload';
+import { ChangeDetectionStrategy } from '@angular/core';
+
+interface WorkflowMetadata {
+  _name: string;
+  _initialStatus: string;
+  _EmailAdmin: string;
+  _SMSAdmin: string;
+  _PreAppInitStatus: string;
+}
+
+interface Template {
+  _name: string;
+  _saveToRelatedDoc: boolean;
+  _securePDF: boolean;
+}
+
+interface Letters {
+  template: Template | Template[];
+}
+
+interface BusinessRule {
+  _name: string;
+  _ErrorMessage: string;
+}
+
+interface BusinessRules {
+  rule: BusinessRule[];
+}
+
+interface Action {
+  _type: 'email' | 'sms' | 'task' | 'decision' | 'document';
+  _addressee: string;
+  _subject?: string;
+  _template?: string;
+  _content?: string;
+  _isReviewable?: string;
+  _previewOnly?: string;
+  _access?: string;
+  _documentFolder?: string;
+  _docType?: string;
+  _mailMergeDataSource?: string;
+  _decisionType?: string;
+  _commencedBy?: string;
+  _completedBy?: string;
+  _isCombineAllotment?: string;
+  _isSubdivision?: string;
+  _displayLocation?: string;
+  _costOfDevelopment?: string;
+  _OPBuildingPart?: string;
+  letters?: Letters;
+}
+
+interface Reminder {
+  _content: string;
+}
+
+interface Transition {
+  _input: string;
+  _next: string;
+  _selectAttachment: string;
+  action?: Action[];
+  reminder?: Reminder[];
+  businessRules?: BusinessRules;
+}
+
+interface State {
+  _name: string;
+  _IdleDays: string;
+  _assignedStaff?: string;
+  transition?: Transition[];
+}
+
+interface WorkflowData extends WorkflowMetadata {
+  state: State[];
+}
 
 interface EditForm {
   // Common properties
@@ -14,8 +89,8 @@ interface EditForm {
   preAppInitStatus?: string;
 
   // Action properties
-  actionType?: string;
-  addressee?: string[];  // Changed to array for multi-select
+  actionType?: 'email' | 'sms' | 'task' | 'decision' | 'document';
+  addressee?: string[];
   subject?: string;
   template?: string;
   content?: string;
@@ -44,13 +119,23 @@ interface EditForm {
   // Template properties
   saveToRelatedDoc?: boolean;
   securePDF?: boolean;
-  templates?: any[];
+  templates?: Template[];
+  
+  // Business Rules
+  businessRules?: BusinessRule[];
+}
+
+interface NodeTypeConfig {
+  allowedChildren: string[];
+  requiredFields: string[];
+  parentTypes: string[];
 }
 
 @Component({
   selector: 'app-workflow-visualizer',
   templateUrl: './workflow-visualizer.component.html',
-  styleUrls: ['./workflow-visualizer.component.scss']
+  styleUrls: ['./workflow-visualizer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Default
 })
 export class WorkflowVisualizerComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
@@ -73,11 +158,11 @@ export class WorkflowVisualizerComponent implements OnInit {
   editDialogVisible: boolean = false;
   editForm: EditForm = {
     name: '',
-    actionType: '',
+    actionType: 'email',
     addressee: []
   };
 
-  actionTypes: any[] = [
+  actionTypes: Array<{label: string, value: Action['_type']}> = [
     { label: 'Email', value: 'email' },
     { label: 'SMS', value: 'sms' },
     { label: 'Task', value: 'task' },
@@ -85,7 +170,35 @@ export class WorkflowVisualizerComponent implements OnInit {
     { label: 'Document', value: 'document' }
   ];
 
-  nodeTypes: any[] = [
+  nodeTypeConfigs: { [key: string]: NodeTypeConfig } = {
+    state: {
+      allowedChildren: ['transition'],
+      requiredFields: ['name', 'idleDays'],
+      parentTypes: []  // States can only be at root level
+    },
+    transition: {
+      allowedChildren: ['action', 'reminder'],
+      requiredFields: ['input', 'next'],
+      parentTypes: ['state']
+    },
+    action: {
+      allowedChildren: ['template'],
+      requiredFields: ['actionType', 'addressee'],
+      parentTypes: ['transition']
+    },
+    template: {
+      allowedChildren: [],
+      requiredFields: ['name'],
+      parentTypes: ['action']
+    },
+    reminder: {
+      allowedChildren: [],
+      requiredFields: ['content'],
+      parentTypes: ['transition']
+    }
+  };
+
+  nodeTypes: Array<{label: string, value: string}> = [
     { label: 'State', value: 'state' },
     { label: 'Transition', value: 'transition' },
     { label: 'Action', value: 'action' },
@@ -108,10 +221,7 @@ export class WorkflowVisualizerComponent implements OnInit {
   ];
 
   showAddNodeDialog: boolean = false;
-  newNodeForm: EditForm = {
-    name: '',
-    type: ''
-  };
+  newNodeForm: EditForm = this.getEmptyNodeForm();
 
   // Add workflow metadata properties
   workflowName: string = '';
@@ -310,25 +420,25 @@ export class WorkflowVisualizerComponent implements OnInit {
     this.clearData();
   }
 
-  loadWorkflow(jsonData: any) {
+  loadWorkflow(jsonData: WorkflowData) {
     try {
       console.log('Loading workflow data:', jsonData);
       
       if (jsonData.state) {
         // Store workflow metadata
-        this.workflowName = jsonData._name || '';
-        this.initialStatus = jsonData._initialStatus || '';
-        this.emailAdmin = jsonData._EmailAdmin || '';
-        this.smsAdmin = jsonData._SMSAdmin || '';
-        this.preAppInitStatus = jsonData._PreAppInitStatus || '';
+        this.workflowName = jsonData._name;
+        this.initialStatus = jsonData._initialStatus;
+        this.emailAdmin = jsonData._EmailAdmin;
+        this.smsAdmin = jsonData._SMSAdmin;
+        this.preAppInitStatus = jsonData._PreAppInitStatus;
 
-    const states = jsonData.state;
-        this.treeData = states.map((state: any) => {
+        const states = jsonData.state;
+        this.treeData = states.map((state) => {
           return {
             data: {
               type: 'state',
-              name: state._name || 'Unnamed State',
-              idleDays: state._IdleDays || '',
+              name: state._name,
+              idleDays: state._IdleDays,
               assignedStaff: state._assignedStaff || ''
             },
             children: this.mapTransitions(state.transition || [])
@@ -353,31 +463,28 @@ export class WorkflowVisualizerComponent implements OnInit {
     }
   }
 
-  private mapTransitions(transitions: any[]): TreeNode[] {
-    if (!transitions) return [];
-    
-    return transitions.map((transition: any) => {
+  private mapTransitions(transitions: Transition[]): TreeNode[] {
+    return transitions.map((transition) => {
       const node: TreeNode = {
         data: {
           type: 'transition',
-          name: transition._input || 'Unnamed Transition',
-          input: transition._input || '',
-          next: transition._next || '',
+          name: transition._input,
+          input: transition._input,
+          next: transition._next,
           selectAttachment: transition._selectAttachment === 'true'
         },
         children: []
       };
 
-      let nodeChildren: TreeNode[] = [];
+      const nodeChildren: TreeNode[] = [];
 
       // Add actions if present
-      if (transition.action) {
+      if (transition.action?.length) {
         const actionNodes: TreeNode[] = [];
         
-        transition.action.forEach((action: any) => {
+        transition.action.forEach((action) => {
           // Handle regular action
           const actionNode = this.createActionNode(action);
-          if (!actionNode.children) actionNode.children = [];
           actionNodes.push(actionNode);
 
           // Handle letter templates if present
@@ -385,38 +492,29 @@ export class WorkflowVisualizerComponent implements OnInit {
             const templates = Array.isArray(action.letters.template) ? 
               action.letters.template : [action.letters.template];
             
-            templates.forEach((template: any) => {
-              actionNodes.push({
-                data: {
-                  type: 'template',
-                  name: template._name || 'Unnamed Template',
-                  saveToRelatedDoc: template._saveToRelatedDoc === 'true',
-                  securePDF: template._securePDF === 'true'
-                },
-                children: []
-              });
+            templates.forEach((template) => {
+              actionNodes.push(this.createTemplateNode(template));
             });
           }
         });
 
-        nodeChildren = actionNodes;
+        nodeChildren.push(...actionNodes);
       }
 
       // Add reminders if present
-      if (transition.reminder) {
-        const reminders = Array.isArray(transition.reminder) ? 
-          transition.reminder : [transition.reminder];
-        
-        const reminderNodes = reminders.map((reminder: any) => ({
-          data: {
-            type: 'reminder',
-            name: reminder._content || 'Unnamed Reminder',
-            content: reminder._content
-          },
-          children: []
-        }));
+      if (transition.reminder?.length) {
+        const reminderNodes = transition.reminder.map((reminder) => 
+          this.createReminderNode(reminder)
+        );
+        nodeChildren.push(...reminderNodes);
+      }
 
-        nodeChildren = nodeChildren.concat(reminderNodes);
+      // Add business rules if present
+      if (transition.businessRules?.rule?.length) {
+        const ruleNodes = transition.businessRules.rule.map((rule) => 
+          this.createBusinessRuleNode(rule)
+        );
+        nodeChildren.push(...ruleNodes);
       }
 
       node.children = nodeChildren;
@@ -424,12 +522,12 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
   }
 
-  private createActionNode(action: any): TreeNode {
+  private createActionNode(action: Action): TreeNode {
     return {
       data: {
         type: 'action',
         name: action._template || action._content || 'Unnamed Action',
-        actionType: action._type || '',
+        actionType: action._type,
         addressee: action._addressee ? action._addressee.split(',') : [],
         subject: action._subject || '',
         template: action._template || '',
@@ -448,7 +546,42 @@ export class WorkflowVisualizerComponent implements OnInit {
         displayLocation: action._displayLocation || '',
         costOfDevelopment: action._costOfDevelopment || '',
         OPBuildingPart: action._OPBuildingPart || ''
-      }
+      },
+      children: []
+    };
+  }
+
+  private createTemplateNode(template: Template): TreeNode {
+    return {
+      data: {
+        type: 'template',
+        name: template._name,
+        saveToRelatedDoc: template._saveToRelatedDoc,
+        securePDF: template._securePDF
+      },
+      children: []
+    };
+  }
+
+  private createReminderNode(reminder: Reminder): TreeNode {
+    return {
+      data: {
+        type: 'reminder',
+        name: reminder._content,
+        content: reminder._content
+      },
+      children: []
+    };
+  }
+
+  private createBusinessRuleNode(rule: BusinessRule): TreeNode {
+    return {
+      data: {
+        type: 'rule',
+        name: rule._name,
+        errorMessage: rule._ErrorMessage
+      },
+      children: []
     };
   }
 
@@ -494,57 +627,65 @@ export class WorkflowVisualizerComponent implements OnInit {
     this.clearData();
   }
 
-  downloadJson() {
+  downloadJson(): void {
     try {
-      // Convert the tree data back to the original format
-      const downloadData = {
-        _name: "BuildingPermit",
+      const downloadData: WorkflowData = {
+        _name: this.workflowName || "BuildingPermit",
+        _initialStatus: this.initialStatus || "New",
+        _EmailAdmin: this.emailAdmin || "yes",
+        _SMSAdmin: this.smsAdmin || "yes",
+        _PreAppInitStatus: this.preAppInitStatus || "NewPreApplication",
         state: this.treeData.map(stateNode => {
-          const state: any = {
+          const state: State = {
             _name: stateNode.data.name,
-            _IdleDays: stateNode.data.idleDays || ""
+            _IdleDays: stateNode.data.idleDays || "0"
           };
+
+          if (stateNode.data.assignedStaff) {
+            state._assignedStaff = stateNode.data.assignedStaff;
+          }
 
           if (stateNode.children && stateNode.children.length > 0) {
             state.transition = stateNode.children.map(transNode => {
-              const trans: any = {
-                _input: transNode.data.name,
+              const transition: Transition = {
+                _input: transNode.data.input,
                 _next: transNode.data.next,
-                _selectAttachment: transNode.data.selectAttachment
+                _selectAttachment: transNode.data.selectAttachment ? 'true' : 'false',
+                action: [],    // Initialize arrays
+                reminder: []   // Initialize arrays
               };
 
               if (transNode.children && transNode.children.length > 0) {
-                trans.action = [];
-                trans.reminder = [];
-
                 transNode.children.forEach(child => {
                   if (child.data.type === 'action') {
-                    const action: any = {
-                      _type: child.data.actionType,
-                      _addressee: child.data.addressee,
-                      _template: child.data.name,
+                    const action: Action = {
+                      _type: child.data.actionType as Action['_type'],
+                      _addressee: Array.isArray(child.data.addressee) ? 
+                        child.data.addressee.join(',') : child.data.addressee || '',
+                      _template: child.data.template,
                       _subject: child.data.subject,
-                      _isReviewable: child.data.isReviewable,
-                      _documentFolder: child.data.documentFolder,
-                      _docType: child.data.docType
+                      _isReviewable: child.data.isReviewable ? 'true' : 'false'
                     };
-                    trans.action.push(action);
-                  } else if (child.data.type === 'template') {
-                    if (!trans.action[0]) trans.action[0] = {};
-                    if (!trans.action[0].letters) trans.action[0].letters = { template: [] };
-                    trans.action[0].letters.template.push({
-                      _name: child.data.name,
-                      _saveToRelatedDoc: child.data.saveToRelatedDoc,
-                      _securePDF: child.data.securePDF
-                    });
+
+                    if (child.data.documentFolder) {
+                      action._documentFolder = child.data.documentFolder;
+                    }
+                    if (child.data.docType) {
+                      action._docType = child.data.docType;
+                    }
+                    if (child.data.content) {
+                      action._content = child.data.content;
+                    }
+                    
+                    transition.action?.push(action);
                   } else if (child.data.type === 'reminder') {
-                    trans.reminder.push({
-                      _content: child.data.name
+                    transition.reminder?.push({
+                      _content: child.data.content
                     });
                   }
                 });
               }
-              return trans;
+              return transition;
             });
           }
           return state;
@@ -552,15 +693,15 @@ export class WorkflowVisualizerComponent implements OnInit {
       };
 
       const jsonData = JSON.stringify(downloadData, null, 2);
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'workflow.json';
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'workflow.json';
       document.body.appendChild(link);
-    link.click();
+      link.click();
       document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(url);
 
       this.messageService.add({
         severity: 'success',
@@ -621,44 +762,107 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
   }
 
+  private getEmptyNodeForm(): EditForm {
+    return {
+      name: '',
+      type: '',
+      idleDays: '',
+      input: '',
+      next: '',
+      actionType: 'email',
+      addressee: [],
+      content: '',
+      selectAttachment: false
+    };
+  }
+
+  getAvailableNodeTypes(): Array<{label: string, value: string}> {
+    // If no node is selected, we're at root level
+    if (!this.selectedNode) {
+      // At root level, only allow states
+      return this.nodeTypes.filter(type => type.value === 'state');
+    }
+
+    // Get the parent type
+    const parentType = this.selectedNode.data.type;
+    
+    // Return node types that can be children of the selected node type
+    return this.nodeTypes.filter(type => {
+      const config = this.nodeTypeConfigs[type.value];
+      return config.parentTypes.includes(parentType);
+    });
+  }
+
+  validateNewNode(): { valid: boolean; message?: string } {
+    if (!this.newNodeForm.type) {
+      return { valid: false, message: 'Please select a node type' };
+    }
+
+    const config = this.nodeTypeConfigs[this.newNodeForm.type];
+    
+    // Check if parent type is valid
+    if (this.selectedNode) {
+      const parentType = this.selectedNode.data.type;
+      if (!config.parentTypes.includes(parentType)) {
+        return { 
+          valid: false, 
+          message: `${this.newNodeForm.type} cannot be added to ${parentType}` 
+        };
+      }
+    } else if (this.newNodeForm.type !== 'state') {
+      return { 
+        valid: false, 
+        message: 'Only states can be added at the root level' 
+      };
+    }
+
+    // Check required fields
+    for (const field of config.requiredFields) {
+      const value = this.newNodeForm[field as keyof EditForm];
+      if (!value || (Array.isArray(value) && value.length === 0)) {
+        return { 
+          valid: false, 
+          message: `${field} is required for ${this.newNodeForm.type}` 
+        };
+      }
+    }
+
+    return { valid: true };
+  }
+
   addNode() {
+    const validation = this.validateNewNode();
+    if (!validation.valid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: validation.message
+      });
+      return;
+    }
+
     const newNode: TreeNode = {
       data: {
         type: this.newNodeForm.type,
-        name: this.newNodeForm.name
+        name: this.newNodeForm.name || this.newNodeForm.input || 'New Node',
+        ...this.getNodeSpecificData()
       },
       children: []
     };
 
     if (this.selectedNode) {
-      // If a node is selected, add as child if it's a state or transition
-      if (this.selectedNode.data.type === 'state') {
-        if (!this.selectedNode.children) {
-          this.selectedNode.children = [];
-        }
-        this.selectedNode.children.push(newNode);
-      } else if (this.selectedNode.data.type === 'transition') {
-        if (!this.selectedNode.children) {
-          this.selectedNode.children = [];
-        }
-        this.selectedNode.children.push(newNode);
+      if (!this.selectedNode.children) {
+        this.selectedNode.children = [];
       }
+      this.selectedNode.children.push(newNode);
     } else {
-      // If no node is selected and it's a state, add to root level
-      if (this.newNodeForm.type === 'state') {
-        this.treeData.push(newNode);
-      } else {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Warning',
-          detail: 'Please select a parent node first'
-        });
-        return;
-      }
+      this.treeData.push(newNode);
     }
 
     this.showAddNodeDialog = false;
-    this.newNodeForm = { name: '', type: '' };
+    this.newNodeForm = this.getEmptyNodeForm();
+    // Clear the selected node after adding
+    this.selectedNode = null;
     this.messageService.add({
       severity: 'success',
       summary: 'Success',
@@ -666,13 +870,50 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
   }
 
-  openAddNodeDialog() {
+  private getNodeSpecificData(): any {
+    const data: any = {};
+    
+    switch (this.newNodeForm.type) {
+      case 'state':
+        data.idleDays = this.newNodeForm.idleDays;
+        break;
+      case 'transition':
+        data.input = this.newNodeForm.input;
+        data.next = this.newNodeForm.next;
+        data.selectAttachment = this.newNodeForm.selectAttachment;
+        break;
+      case 'action':
+        data.actionType = this.newNodeForm.actionType;
+        data.addressee = this.newNodeForm.addressee;
+        data.subject = this.newNodeForm.subject;
+        data.template = this.newNodeForm.template;
+        data.content = this.newNodeForm.content;
+        break;
+      case 'reminder':
+        data.content = this.newNodeForm.content;
+        break;
+      case 'template':
+        data.name = this.newNodeForm.name;
+        data.saveToRelatedDoc = this.newNodeForm.saveToRelatedDoc;
+        data.securePDF = this.newNodeForm.securePDF;
+        break;
+    }
+    
+    return data;
+  }
+
+  openAddNodeDialog(node?: TreeNode) {
     this.showAddNodeDialog = true;
+    this.newNodeForm = this.getEmptyNodeForm();
+    // Store the currently selected node
+    this.selectedNode = node || null;
   }
 
   cancelAddNode() {
     this.showAddNodeDialog = false;
-    this.newNodeForm = { name: '', type: '' };
+    this.newNodeForm = this.getEmptyNodeForm();
+    // Clear the selected node when canceling
+    this.selectedNode = null;
   }
 
   // Add missing method

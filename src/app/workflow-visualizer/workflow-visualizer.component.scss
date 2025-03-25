@@ -783,3 +783,66 @@
   align-items: center;
   margin-bottom: 1rem;
 }
+
+.p-fluid {
+  .field {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    input, textarea {
+      width: 100%;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+:host ::ng-deep {
+  .p-dialog {
+    .p-dialog-header {
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem;
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.5rem;
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+    }
+  }
+
+  .p-dropdown, .p-multiselect {
+    width: 100%;
+  }
+
+  .p-checkbox {
+    margin-right: 0.5rem;
+  }
+}
+
+.field-group {
+  display: flex;
+  gap: 1rem;
+
+  .field {
+    flex: 1;
+  }
+}
+
+.required-field label::after {
+  content: "*";
+  color: red;
+  margin-left: 0.25rem;
+}

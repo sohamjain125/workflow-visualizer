@@ -766,8 +766,70 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   openJsonEditor() {
-    this.jsonEditorContent = JSON.stringify(this.treeData, null, 2);
-    this.showJsonEditor = true;
+    try {
+      // Create the complete workflow data structure
+      const workflowData: WorkflowData = {
+        _name: this.workflowName || "BuildingPermit",
+        _initialStatus: this.initialStatus || "New",
+        _EmailAdmin: this.emailAdmin || "yes",
+        _SMSAdmin: this.smsAdmin || "yes",
+        _PreAppInitStatus: this.preAppInitStatus || "NewPreApplication",
+        state: this.treeData.map(stateNode => {
+          const state: State = {
+            _name: stateNode.data.name,
+            _IdleDays: stateNode.data.idleDays || "0"
+          };
+
+          if (stateNode.data.assignedStaff) {
+            state._assignedStaff = stateNode.data.assignedStaff;
+          }
+
+          if (stateNode.children && stateNode.children.length > 0) {
+            state.transition = stateNode.children.map(transNode => {
+              const transition: Transition = {
+                _input: transNode.data.input || transNode.data.name,
+                _next: transNode.data.next || "",
+                _selectAttachment: transNode.data.selectAttachment ? 'true' : 'false',
+                action: [],
+                reminder: []
+              };
+
+              if (transNode.children && transNode.children.length > 0) {
+                transNode.children.forEach(child => {
+                  if (child.data.type === 'action') {
+                    const action: Action = {
+                      _type: child.data.actionType as Action['_type'],
+                      _addressee: Array.isArray(child.data.addressee) ? 
+                        child.data.addressee.join(',') : child.data.addressee || '',
+                      _template: child.data.template || '',
+                      _subject: child.data.subject || '',
+                      _isReviewable: child.data.isReviewable ? 'true' : 'false'
+                    };
+                    transition.action?.push(action);
+                  } else if (child.data.type === 'reminder') {
+                    transition.reminder?.push({
+                      _content: child.data.content || ''
+                    });
+                  }
+                });
+              }
+              return transition;
+            });
+          }
+          return state;
+        })
+      };
+
+      this.jsonEditorContent = JSON.stringify(workflowData, null, 2);
+      this.showJsonEditor = true;
+    } catch (error) {
+      console.error('Error preparing JSON data:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to prepare JSON data for editing'
+      });
+    }
   }
 
   closeJsonEditor() {

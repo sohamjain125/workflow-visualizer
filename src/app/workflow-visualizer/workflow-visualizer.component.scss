@@ -911,3 +911,43 @@
   border-top: 1px solid #dee2e6;
 }
 
+.id-input-form {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 500;
+      color: #495057;
+    }
+
+    input {
+      padding: 0.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 0.875rem;
+
+      &:focus {
+        border-color: #2196F3;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.25);
+      }
+    }
+  }
+
+  button {
+    height: 38px;
+    margin-bottom: 0.5rem;
+  }
+}
+

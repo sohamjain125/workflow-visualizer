@@ -11,8 +11,8 @@ export class WorkflowDataService {
 
   constructor(private http: HttpClient) { }
 
-  getEmailTemplates(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/emailtemplates`);
+  getEmailTemplates(licenseId: number, applicationId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/emailtemplates?licenseId=${licenseId}&applicationId=${applicationId}`);
   }
 
   getAddressees(): Observable<any[]> {

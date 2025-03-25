@@ -241,6 +241,10 @@ export class WorkflowVisualizerComponent implements OnInit {
   preApplicationInitialStatus: string = '';
   selectedApplicationType: string = '';
 
+  // Add new properties for IDs
+  licenseId: number | null = null;
+  applicationId: number | null = null;
+
   constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
   }
@@ -249,21 +253,23 @@ export class WorkflowVisualizerComponent implements OnInit {
     this.loadEmailTemplatesAndAddressees();
   }
   loadEmailTemplatesAndAddressees() {
-    // Get email templates
-    this.workflowDataService.getEmailTemplates().subscribe({
-      next: (templates) => {
-        this.emailTemplates = templates;
-        console.log('Email templates loaded:', templates);
-      },
-      error: (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load email templates'
-        });
-        console.error('Error loading templates:', error);
-      }
-    });
+    // Get email templates only if both IDs are provided
+    if (this.licenseId && this.applicationId) {
+      this.workflowDataService.getEmailTemplates(this.licenseId, this.applicationId).subscribe({
+        next: (templates) => {
+          this.emailTemplates = templates;
+          console.log('Email templates loaded:', templates);
+        },
+        error: (error) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load email templates'
+          });
+          console.error('Error loading templates:', error);
+        }
+      });
+    }
 
     // Get addressees
     this.workflowDataService.getAddressees().subscribe({
@@ -1003,5 +1009,38 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   toggleTableCollapse() {
     this.isTableCollapsed = !this.isTableCollapsed;
+  }
+
+  // Add new method for handling ID submission
+  onSubmitIds() {
+    if (!this.licenseId || !this.applicationId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Please enter both License ID and Application ID'
+      });
+      return;
+    }
+
+    // Call the service with the IDs
+    this.workflowDataService.getEmailTemplates(this.licenseId, this.applicationId).subscribe({
+      next: (templates) => {
+        this.emailTemplates = templates;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Sent successfully'
+        });
+        console.log('Email templates loaded:', templates);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load email templates'
+        });
+        console.error('Error loading templates:', error);
+      }
+    });
   }
 }

@@ -510,8 +510,11 @@ export class WorkflowVisualizerComponent implements OnInit {
     }
   }
 
-  private mapTransitions(transitions: Transition[]): TreeNode[] {
-    return transitions.map((transition) => {
+  private mapTransitions(transitions: Transition | Transition[]): TreeNode[] {
+    // If transitions is a single object, convert it to an array
+    const transitionsArray = Array.isArray(transitions) ? transitions : [transitions];
+    
+    return transitionsArray.map((transition) => {
       const node: TreeNode = {
         data: {
           type: 'transition',

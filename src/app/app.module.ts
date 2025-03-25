@@ -20,6 +20,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { AppComponent } from './app.component';
 import { WorkflowVisualizerComponent } from './workflow-visualizer/workflow-visualizer.component';
 import { MessageService } from 'primeng/api';
+import { WorkflowDataService } from './service/workflow-data.service';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,7 @@ import { MessageService } from 'primeng/api';
     CheckboxModule,
     MultiSelectModule
   ],
-  providers: [MessageService],
+  providers: [MessageService,WorkflowDataService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

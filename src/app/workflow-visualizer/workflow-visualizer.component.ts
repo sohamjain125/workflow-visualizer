@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { TreeNode, MenuItem, MessageService } from 'primeng/api';
 import { FileUpload } from 'primeng/fileupload';
 import { ChangeDetectionStrategy } from '@angular/core';
+import { WorkflowDataService } from '../service/workflow-data.service';
 
 interface WorkflowMetadata {
   _name: string;
@@ -144,7 +145,11 @@ interface NodeTypeConfig {
 })
 export class WorkflowVisualizerComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
-  
+
+  emailTemplates: any[] = [];
+  addresseeOptions: any[] = [];
+
+  isTableCollapsed: boolean = false;
   searchText: string = '';
   applicationTypes: any[] = [
     { label: 'All', value: null },
@@ -211,14 +216,8 @@ export class WorkflowVisualizerComponent implements OnInit {
     { label: 'Reminder', value: 'reminder' }
   ];
 
-  addresseeOptions: any[] = [
-    { label: 'Applicant', value: 'Applicant' },
-    { label: 'Owner', value: 'Owner' },
-    { label: 'Builder', value: 'Builder' },
-    { label: 'Council', value: 'Council' },
-    { label: 'AssignedStaff', value: 'AssignedStaff' },
-    { label: 'SignOffStaff', value: 'SignOffStaff' }
-  ];
+  
+  
 
   booleanOptions: any[] = [
     { label: 'True', value: true },
@@ -242,12 +241,46 @@ export class WorkflowVisualizerComponent implements OnInit {
   preApplicationInitialStatus: string = '';
   selectedApplicationType: string = '';
 
-  constructor(private messageService: MessageService) {
+  constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.loadEmailTemplatesAndAddressees();
+  }
+  loadEmailTemplatesAndAddressees() {
+    // Get email templates
+    this.workflowDataService.getEmailTemplates().subscribe({
+      next: (templates) => {
+        this.emailTemplates = templates;
+        console.log('Email templates loaded:', templates);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load email templates'
+        });
+        console.error('Error loading templates:', error);
+      }
+    });
 
+    // Get addressees
+    this.workflowDataService.getAddressees().subscribe({
+      next: (addressees) => {
+        this.addresseeOptions = addressees;
+        console.log('Addressees loaded:', addressees);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load addressees'
+        });
+        console.error('Error loading addressees:', error);
+      }
+    });
+  }
   initializeSampleData() {
     this.treeData = [
       {
@@ -810,10 +843,14 @@ export class WorkflowVisualizerComponent implements OnInit {
     this.selectedNode = node || null;
   }
 
-  addNewNodeForm() {
-    this.multiNodeForm.nodes.push(this.getEmptyNodeForm());
-  }
-
+  // In your component class
+addNewNodeForm() {
+  const emptyForm = this.getEmptyNodeForm();
+  // Make sure these properties are properly initialized
+  emptyForm.template = '';
+  emptyForm.addressee = [];
+  this.multiNodeForm.nodes.push(emptyForm);
+}
   removeNodeForm(index: number) {
     if (this.multiNodeForm.nodes.length > 1) {
       this.multiNodeForm.nodes.splice(index, 1);
@@ -966,5 +1003,9 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
 
     return filteredData;
+  }
+
+  toggleTableCollapse() {
+    this.isTableCollapsed = !this.isTableCollapsed;
   }
 }

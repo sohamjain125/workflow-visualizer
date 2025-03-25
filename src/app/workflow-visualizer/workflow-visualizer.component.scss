@@ -477,6 +477,27 @@
         color: #37474f;
         border-bottom: 1px solid #e0e0e0;
 
+        .collapse-column {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          .collapse-icon {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            font-size: 1rem;
+            color: #666;
+
+            &:hover {
+              color: #1565c0;
+            }
+
+            &.collapsed {
+              transform: rotate(-90deg);
+            }
+          }
+        }
+
         > div {
           padding: 0.5rem;
           display: flex;
@@ -486,6 +507,10 @@
 
       .table-body {
         background-color: #ffffff;
+
+        &.collapsed {
+          display: none;
+        }
 
         ::ng-deep {
           .p-tree {

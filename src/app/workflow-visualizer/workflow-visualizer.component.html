@@ -38,14 +38,19 @@
     <!-- Table with header and data -->
     <div class="table-content">
       <div class="table-header">
-        <div></div>
+        <div class="collapse-column">
+          <i class="pi pi-chevron-down collapse-icon" 
+             [class.collapsed]="isTableCollapsed"
+             (click)="toggleTableCollapse()">
+          </i>
+        </div>
         <div>Type</div>
         <div>Name</div>
         <div>Details</div>
         <div>Actions</div>
       </div>
 
-      <div class="table-body">
+      <div class="table-body" [class.collapsed]="isTableCollapsed">
         <p-tree [value]="filterNodes()" 
                 [filter]="false"
                 [filterBy]="'name'">
@@ -183,162 +188,163 @@
 </div>
 
 <!-- Add Node Dialog -->
-<p-dialog [(visible)]="showAddNodeDialog" 
-          [header]="'Add New ' + (multiNodeForm.type || 'Nodes')"
-          [modal]="true" 
-          [style]="{width: '70vw'}" 
-          [draggable]="false" 
-          [resizable]="false">
-    
-    <div class="p-fluid">
-        <!-- Node Type Selection -->
-        <div class="field">
-            <label for="nodeType">Node Type</label>
-            <p-dropdown id="nodeType"
-                      [(ngModel)]="multiNodeForm.type"
-                      [options]="getAvailableNodeTypes()"
-                      placeholder="Select a node type"
-                      [required]="true">
-            </p-dropdown>
-        </div>
+<!-- src/app/workflow-visualizer/workflow-visualizer.component.html -->
 
-        <div class="nodes-container">
-            <div *ngFor="let nodeForm of multiNodeForm.nodes; let i = index" class="node-form">
-                <div class="node-form-header">
-                    <h4>Node {{i + 1}}</h4>
-                    <button pButton type="button" 
-                            icon="pi pi-trash" 
-                            class="p-button-text p-button-danger"
-                            (click)="removeNodeForm(i)"
-                            [disabled]="multiNodeForm.nodes.length === 1">
-                    </button>
-                </div>
-
-                <!-- State Fields -->
-                <div *ngIf="multiNodeForm.type === 'state'" class="field">
-                    <div class="field">
-                        <label for="stateName{{i}}">State Name</label>
-                        <input [id]="'stateName' + i" type="text" pInputText [(ngModel)]="nodeForm.name" required>
-                    </div>
-                    <div class="field">
-                        <label for="idleDays{{i}}">Idle Days</label>
-                        <input [id]="'idleDays' + i" type="number" pInputText [(ngModel)]="nodeForm.idleDays" required>
-                    </div>
-                </div>
-
-                <!-- Transition Fields -->
-                <div *ngIf="multiNodeForm.type === 'transition'" class="field">
-                    <div class="field">
-                        <label for="input{{i}}">Input</label>
-                        <input [id]="'input' + i" type="text" pInputText [(ngModel)]="nodeForm.input" required>
-                    </div>
-                    <div class="field">
-                        <label for="next{{i}}">Next State</label>
-                        <input [id]="'next' + i" type="text" pInputText [(ngModel)]="nodeForm.next" required>
-                    </div>
-                    <div class="field">
-                        <label for="selectAttachment{{i}}">Select Attachment</label>
-                        <p-checkbox [id]="'selectAttachment' + i"
-                                  [(ngModel)]="nodeForm.selectAttachment"
-                                  [binary]="true">
-                        </p-checkbox>
-                    </div>
-                </div>
-
-                <!-- Action Fields -->
-                <div *ngIf="multiNodeForm.type === 'action'" class="field">
-                    <div class="field">
-                        <label for="actionType{{i}}">Action Type</label>
-                        <p-dropdown [id]="'actionType' + i"
-                                  [(ngModel)]="nodeForm.actionType"
-                                  [options]="actionTypes"
-                                  placeholder="Select action type"
-                                  [required]="true">
-                        </p-dropdown>
-                    </div>
-                    <div class="field">
-                        <label for="addressee{{i}}">Addressee</label>
-                        <p-multiSelect [id]="'addressee' + i"
-                                     [(ngModel)]="nodeForm.addressee"
-                                     [options]="addresseeOptions"
-                                     [required]="true">
-                        </p-multiSelect>
-                    </div>
-                    <div class="field">
-                        <label for="subject{{i}}">Subject</label>
-                        <input [id]="'subject' + i" type="text" pInputText [(ngModel)]="nodeForm.subject">
-                    </div>
-                    <div class="field">
-                        <label for="template{{i}}">Template</label>
-                        <input [id]="'template' + i" type="text" pInputText [(ngModel)]="nodeForm.template">
-                    </div>
-                    <div class="field">
-                        <label for="content{{i}}">Content</label>
-                        <textarea [id]="'content' + i" pInputTextarea [(ngModel)]="nodeForm.content" rows="3"></textarea>
-                    </div>
-                </div>
-
-                <!-- Template Fields -->
-                <div *ngIf="multiNodeForm.type === 'template'" class="field">
-                    <div class="field">
-                        <label for="templateName{{i}}">Template Name</label>
-                        <input [id]="'templateName' + i" type="text" pInputText [(ngModel)]="nodeForm.name" required>
-                    </div>
-                    <div class="field">
-                        <label for="saveToRelatedDoc{{i}}">Save to Related Doc</label>
-                        <p-checkbox [id]="'saveToRelatedDoc' + i"
-                                  [(ngModel)]="nodeForm.saveToRelatedDoc"
-                                  [binary]="true">
-                        </p-checkbox>
-                    </div>
-                    <div class="field">
-                        <label for="securePDF{{i}}">Secure PDF</label>
-                        <p-checkbox [id]="'securePDF' + i"
-                                  [(ngModel)]="nodeForm.securePDF"
-                                  [binary]="true">
-                        </p-checkbox>
-                    </div>
-                </div>
-
-                <!-- Reminder Fields -->
-                <div *ngIf="multiNodeForm.type === 'reminder'" class="field">
-                    <div class="field">
-                        <label for="reminderContent{{i}}">Content</label>
-                        <textarea [id]="'reminderContent' + i"
-                                 pInputTextarea 
-                                 [(ngModel)]="nodeForm.content" 
-                                 rows="3" 
-                                 required>
-                        </textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="add-node-button">
-            <button pButton type="button"
-                    label="Add Another Node"
-                    icon="pi pi-plus"
-                    class="p-button-text"
-                    (click)="addNewNodeForm()">
-            </button>
-        </div>
+<p-dialog 
+  [(visible)]="showAddNodeDialog" 
+  [style]="{width: '600px'}" 
+  [header]="'Add ' + (multiNodeForm.type ? multiNodeForm.type.charAt(0).toUpperCase() + multiNodeForm.type.slice(1) : 'Node')"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false">
+  
+  <div class="p-fluid">
+    <!-- Node Type Selection -->
+    <div class="p-field">
+      <label>Node Type</label>
+      <p-dropdown 
+        [options]="getAvailableNodeTypes()"
+        [(ngModel)]="multiNodeForm.type"
+        placeholder="Select Node Type"
+        optionLabel="label"
+        optionValue="value">
+      </p-dropdown>
     </div>
 
-    <ng-template pTemplate="footer">
-        <button pButton 
-                label="Cancel" 
-                icon="pi pi-times" 
-                class="p-button-text" 
-                (click)="cancelAddNode()">
-        </button>
-        <button pButton 
-                label="Add Nodes" 
-                icon="pi pi-check" 
-                class="p-button-text" 
-                (click)="addNodes()">
-        </button>
-    </ng-template>
+    <!-- Node Forms -->
+    <div class="nodes-container">
+      <div *ngFor="let node of multiNodeForm.nodes; let i = index" class="node-form">
+        <div class="node-form-header">
+          <h4>Node {{i + 1}}</h4>
+          <button *ngIf="multiNodeForm.nodes.length > 1" 
+                  pButton 
+                  icon="pi pi-trash" 
+                  class="p-button-danger p-button-text"
+                  (click)="removeNodeForm(i)">
+          </button>
+        </div>
+
+        <!-- State Fields -->
+        <div *ngIf="multiNodeForm.type === 'state'" class="p-field">
+          <label>State Name</label>
+          <input pInputText [(ngModel)]="node.name" required>
+          
+          <label>Idle Days</label>
+          <input pInputText type="number" [(ngModel)]="node.idleDays" required>
+        </div>
+
+        <!-- Transition Fields -->
+        <div *ngIf="multiNodeForm.type === 'transition'" class="p-field">
+          <label>Input</label>
+          <input pInputText [(ngModel)]="node.input" required>
+          
+          <label>Next State</label>
+          <input pInputText [(ngModel)]="node.next" required>
+          
+          <label>Requires Attachment</label>
+          <p-checkbox [(ngModel)]="node.selectAttachment" [binary]="true"></p-checkbox>
+        </div>
+
+        <!-- Action Fields -->
+        <div *ngIf="multiNodeForm.type === 'action'" class="p-field">
+          <label>Action Type</label>
+          <p-dropdown 
+            [options]="actionTypes"
+            [(ngModel)]="node.actionType"
+            placeholder="Select Action Type"
+            optionLabel="label"
+            optionValue="value">
+          </p-dropdown>
+
+          <!-- Email Template Dropdown - Show only when action type is 'email' -->
+          <div *ngIf="node.actionType === 'email'" class="p-field">
+            <label>Email Template</label>
+            <p-dropdown 
+              [options]="emailTemplates"
+              [(ngModel)]="node.template"
+              placeholder="Select Email Template"
+              optionLabel="label"
+              optionValue="value"
+              [required]="true">
+            </p-dropdown>
+          </div>
+
+          <!-- Addressee Multi-Select -->
+          <div class="p-field">
+            <label>Addressee</label>
+            <p-multiSelect 
+              [options]="addresseeOptions"
+              [(ngModel)]="node.addressee"
+              placeholder="Select Addressees"
+              optionLabel="label"
+              optionValue="value"
+              [required]="true">
+            </p-multiSelect>
+          </div>
+
+          <!-- Additional fields based on action type -->
+          <div *ngIf="node.actionType === 'email' || node.actionType === 'sms'" class="p-field">
+            <label>Subject</label>
+            <input pInputText [(ngModel)]="node.subject">
+          </div>
+
+          <div class="p-field">
+            <label>Content</label>
+            <textarea pInputTextarea [(ngModel)]="node.content" rows="3"></textarea>
+          </div>
+        </div>
+
+        <!-- Template Fields -->
+        <div *ngIf="multiNodeForm.type === 'template'" class="p-field">
+          <label>Template Name</label>
+          <input pInputText [(ngModel)]="node.name" required>
+          
+          <div class="p-field-checkbox">
+            <p-checkbox [(ngModel)]="node.saveToRelatedDoc" [binary]="true"></p-checkbox>
+            <label>Save to Related Document</label>
+          </div>
+          
+          <div class="p-field-checkbox">
+            <p-checkbox [(ngModel)]="node.securePDF" [binary]="true"></p-checkbox>
+            <label>Secure PDF</label>
+          </div>
+        </div>
+
+        <!-- Reminder Fields -->
+        <div *ngIf="multiNodeForm.type === 'reminder'" class="p-field">
+          <label>Content</label>
+          <textarea pInputTextarea [(ngModel)]="node.content" rows="3" required></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Another Node Button -->
+    <div class="add-node-button">
+      <button pButton 
+              type="button" 
+              label="Add Another Node" 
+              icon="pi pi-plus"
+              (click)="addNewNodeForm()">
+      </button>
+    </div>
+  </div>
+
+  <!-- Dialog Footer -->
+  <ng-template pTemplate="footer">
+    <button pButton 
+            type="button" 
+            label="Cancel" 
+            icon="pi pi-times" 
+            class="p-button-text" 
+            (click)="cancelAddNode()">
+    </button>
+    <button pButton 
+            type="button" 
+            label="Add" 
+            icon="pi pi-check" 
+            (click)="addNodes()">
+    </button>
+  </ng-template>
 </p-dialog>
 
 <!-- Edit Node Dialog -->
@@ -424,11 +430,18 @@
         </p-multiSelect>
       </div>
 
-      <div class="p-field">
-        <label>Template</label>
-        <input pInputText [(ngModel)]="editForm.template" class="p-inputtext-lg" style="width: 100%">
+      <div class="p-field" *ngIf="editForm.type === 'action' && editForm.actionType === 'email'">
+        <label for="template">Email Template</label>
+        <p-dropdown 
+          [options]="emailTemplates"
+          [(ngModel)]="editForm.template"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a template"
+          [required]="true">
+        </p-dropdown>
       </div>
-
+      
       <div class="p-field" *ngIf="['email', 'sms'].includes(editForm.actionType || '')">
         <label>Subject</label>
         <input pInputText [(ngModel)]="editForm.subject" class="p-inputtext-lg" style="width: 100%">

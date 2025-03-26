@@ -556,18 +556,19 @@
 .tree-node-row {
   display: grid;
   grid-template-columns: 42px 150px 250px 1fr 100px;
-  padding: 0.75rem 1rem;
+  padding: 0.25rem 1rem;
   border-bottom: 1px solid #e0e0e0;
   background-color: white;
   transition: all 0.2s;
   align-items: center;
+  min-height: 40px;
 
   &:hover {
     background-color: #f5f9ff;
   }
 
   > div {
-    padding: 0.5rem;
+    padding: 0.25rem;
     display: flex;
     align-items: center;
   }
@@ -669,18 +670,18 @@
 .detail-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
   background-color: #f5f9ff;
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #546e7a;
   border: 1px solid #e3f2fd;
   white-space: nowrap;
 
   i {
     color: #1565c0;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
   }
 }
 
@@ -689,19 +690,19 @@
 .action-badge,
 .template-badge,
 .reminder-badge {
-  padding: 0.4rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   white-space: nowrap;
   width: fit-content;
-  min-width: 90px;
+  min-width: 80px;
 
   i {
-    font-size: 1rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -733,6 +734,8 @@
 .node-name {
   font-weight: 500;
   color: #37474f;
+  font-size: 0.875rem;
+  line-height: 1.2;
 }
 
 .node-detail {
@@ -979,6 +982,35 @@
       .p-button {
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
+      }
+    }
+  }
+}
+
+::ng-deep {
+  .p-tree {
+    .p-tree-container {
+      .p-treenode {
+        .p-treenode-content {
+          .p-tree-toggler {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #666;
+            border-radius: 4px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover {
+              background-color: #f0f0f0;
+            }
+
+            .p-tree-toggler-icon {
+              font-size: 0.875rem;
+            }
+          }
+        }
       }
     }
   }

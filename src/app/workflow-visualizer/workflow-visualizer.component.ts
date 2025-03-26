@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { TreeNode, MenuItem, MessageService } from 'primeng/api';
+import { TreeNode, MenuItem, MessageService, TreeDragDropService } from 'primeng/api';
 import { FileUpload } from 'primeng/fileupload';
 import { ChangeDetectionStrategy } from '@angular/core';
 import { WorkflowDataService } from '../service/workflow-data.service';
@@ -32,7 +32,7 @@ interface BusinessRules {
 }
 
 interface Action {
-  _type: 'email' | 'sms' | 'task' | 'decision' | 'document';
+  _type: 'email' | 'sms' | 'task' | 'decision' | 'document' | 'APICall';
   _addressee: string;
   _subject?: string;
   _template?: string;
@@ -90,7 +90,7 @@ interface EditForm {
   preAppInitStatus?: string;
 
   // Action properties
-  actionType?: 'email' | 'sms' | 'task' | 'decision' | 'document';
+  actionType?: 'email' | 'sms' | 'task' | 'decision' | 'document' | 'APICall';
   addressee?: string[];
   subject?: string;
   template?: string;
@@ -141,7 +141,8 @@ interface NodeTypeConfig {
   selector: 'app-workflow-visualizer',
   templateUrl: './workflow-visualizer.component.html',
   styleUrls: ['./workflow-visualizer.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default
+  changeDetection: ChangeDetectionStrategy.Default,
+  providers: [TreeDragDropService]
 })
 export class WorkflowVisualizerComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
@@ -177,7 +178,8 @@ export class WorkflowVisualizerComponent implements OnInit {
     { label: 'SMS', value: 'sms' },
     { label: 'Task', value: 'task' },
     { label: 'Decision', value: 'decision' },
-    { label: 'Document', value: 'document' }
+    { label: 'Document', value: 'document' },
+    { label: 'APICall', value: 'APICall' }
   ];
 
   nodeTypeConfigs: { [key: string]: NodeTypeConfig } = {
@@ -187,7 +189,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       parentTypes: []  // States can only be at root level
     },
     transition: {
-      allowedChildren: ['action'],
+      allowedChildren: ['action', 'reminder'],
       requiredFields: ['input', 'next'],
       parentTypes: ['state']
     },
@@ -245,12 +247,19 @@ export class WorkflowVisualizerComponent implements OnInit {
   licenseId: number | null = null;
   applicationId: number | null = null;
 
+  dragDropNodes: TreeNode[] = [];
+  isDragging: boolean = false;
+  workflowData: any = null;
+  nodeMenu: MenuItem[] = [];
+  draggedNode: TreeNode | null = null;
+
   constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
   }
 
   ngOnInit() {
     this.loadEmailTemplatesAndAddressees();
+    this.initializeContextMenu();
   }
   loadEmailTemplatesAndAddressees() {
     // Get email templates only if both IDs are provided
@@ -467,6 +476,29 @@ export class WorkflowVisualizerComponent implements OnInit {
     this.clearData();
   }
 
+  private validateTreeStructure(nodes: TreeNode[]): boolean {
+    for (const node of nodes) {
+      // Check if state has any state children
+      if (node.data.type === 'state' && node.children) {
+        for (const child of node.children) {
+          if (child.data.type === 'state') {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Invalid tree structure: States cannot be nested inside other states'
+            });
+            return false;
+          }
+          // Recursively check children
+          if (child.children && !this.validateTreeStructure(child.children)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   loadWorkflow(jsonData: WorkflowData) {
     try {
       console.log('Loading workflow data:', jsonData);
@@ -492,11 +524,20 @@ export class WorkflowVisualizerComponent implements OnInit {
           };
         });
 
+        // Validate the tree structure after loading
+        if (!this.validateTreeStructure(this.treeData)) {
+          this.treeData = [];
+          return;
+        }
+
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
           detail: `Loaded ${states.length} states successfully`
         });
+
+        // After mapping states, update dragDropNodes
+        this.dragDropNodes = [...this.treeData];
       } else {
         throw new Error('Invalid workflow format: missing state property');
       }
@@ -939,6 +980,16 @@ export class WorkflowVisualizerComponent implements OnInit {
       };
 
       if (this.selectedNode) {
+        // Check if we're trying to add a state inside another state
+        if (nodeForm.type === 'state' && this.selectedNode.data.type === 'state') {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'States cannot be nested inside other states'
+          });
+          return;
+        }
+
         if (!this.selectedNode.children) {
           this.selectedNode.children = [];
         }
@@ -976,6 +1027,20 @@ export class WorkflowVisualizerComponent implements OnInit {
           valid: false, 
           message: `${nodeForm.type} cannot be added to ${parentType}` 
         };
+      }
+
+      // Additional check for state nesting
+      if (nodeForm.type === 'state') {
+        let current: TreeNode | undefined = this.selectedNode;
+        while (current) {
+          if (current.data.type === 'state') {
+            return {
+              valid: false,
+              message: 'States cannot be nested inside other states'
+            };
+          }
+          current = current.parent;
+        }
       }
     } else if (nodeForm.type !== 'state') {
       return { 
@@ -1095,5 +1160,214 @@ export class WorkflowVisualizerComponent implements OnInit {
         console.error('Error loading templates:', error);
       }
     });
+  }
+
+  onDragStart(event: any) {
+    const draggedNode = event.dragNode;
+    if (draggedNode.data.type === 'state') {
+      this.draggedNode = draggedNode;
+    }
+  }
+
+  onDragEnd(event: any) {
+    this.draggedNode = null;
+  }
+
+  onDrop(event: any) {
+    const draggedNode = event.dragNode;
+    const targetNode = event.dropNode;
+    
+    if (draggedNode && targetNode) {
+      const draggedNodeType = draggedNode.data.type;
+      const targetNodeType = targetNode.data.type;
+
+      // Prevent states from being nested inside other states
+      if (draggedNodeType === 'state') {
+        // Check if target is a state
+        if (targetNodeType === 'state') {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'States cannot be nested inside other states'
+          });
+          return;
+        }
+
+        // Check if target is inside a state
+        let current = targetNode.parent;
+        while (current) {
+          if (current.data.type === 'state') {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'States cannot be nested inside other states'
+            });
+            return;
+          }
+          current = current.parent;
+        }
+      }
+
+      // Update the tree structure
+      this.updateTreeStructure(draggedNode, targetNode);
+      
+      // Update the workflow data
+      this.updateWorkflowData();
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Node position updated'
+      });
+    }
+  }
+
+  private hasStateParent(node: TreeNode): boolean {
+    let current = node.parent;
+    while (current) {
+      if (current.data.type === 'state') {
+        return true;
+      }
+      current = current.parent;
+    }
+    return false;
+  }
+
+  private updateTreeStructure(draggedNode: TreeNode, targetNode: TreeNode) {
+    // Remove dragged node from its current position
+    const draggedParent = this.findParentNode(draggedNode, this.treeData);
+    if (draggedParent && draggedParent.children) {
+      draggedParent.children = draggedParent.children.filter(node => node !== draggedNode);
+    } else {
+      this.treeData = this.treeData.filter(node => node !== draggedNode);
+    }
+
+    // Add dragged node to new position
+    if (targetNode.parent) {
+      if (!targetNode.parent.children) {
+        targetNode.parent.children = [];
+      }
+      targetNode.parent.children.push(draggedNode);
+      draggedNode.parent = targetNode.parent;
+    } else {
+      this.treeData.push(draggedNode);
+      draggedNode.parent = undefined;
+    }
+  }
+
+  private findParentNode(node: TreeNode, nodes: TreeNode[]): TreeNode | null {
+    for (const n of nodes) {
+      if (n.children) {
+        if (n.children.includes(node)) {
+          return n;
+        }
+        const found = this.findParentNode(node, n.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  private updateWorkflowData() {
+    // Update the workflow data structure based on the new tree structure
+    this.workflowData.state = this.treeData.map(node => {
+      if (node.data.type === 'state') {
+        return {
+          _name: node.data.name,
+          _IdleDays: node.data.idleDays || "0"
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  validateDragDrop(event: any): boolean {
+    const draggedNode = event.dragNode;
+    const targetNode = event.dropNode;
+    
+    // If dragging a state
+    if (draggedNode.data.type === 'state') {
+      // Check if target is a state
+      if (targetNode.data.type === 'state') {
+        return false;
+      }
+      
+      // Check if target is inside a state
+      let current = targetNode.parent;
+      while (current) {
+        if (current.data.type === 'state') {
+          return false;
+        }
+        current = current.parent;
+      }
+    }
+    
+    return true;
+  }
+
+  private initializeContextMenu() {
+    this.nodeMenu = [
+      {
+        label: 'Add Child',
+        icon: 'pi pi-plus',
+        command: (event) => {
+          const node = event.item.node;
+          this.openAddNodeDialog(node);
+        }
+      },
+      {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: (event) => {
+          const node = event.item.node;
+          this.startEdit(node);
+        }
+      },
+      {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: (event) => {
+          const node = event.item.node;
+          this.deleteNode(node);
+        }
+      }
+    ];
+  }
+
+  isFirstState(node: TreeNode): boolean {
+    if (node.data.type !== 'state') return false;
+    const stateNodes = this.treeData.filter(n => n.data.type === 'state');
+    return stateNodes.indexOf(node) === 0;
+  }
+
+  isLastState(node: TreeNode): boolean {
+    if (node.data.type !== 'state') return false;
+    const stateNodes = this.treeData.filter(n => n.data.type === 'state');
+    return stateNodes.indexOf(node) === stateNodes.length - 1;
+  }
+
+  moveState(node: TreeNode, direction: 'up' | 'down') {
+    if (node.data.type !== 'state') return;
+
+    const stateNodes = this.treeData.filter(n => n.data.type === 'state');
+    const currentIndex = stateNodes.indexOf(node);
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (newIndex >= 0 && newIndex < stateNodes.length) {
+      // Remove the node from its current position
+      this.treeData = this.treeData.filter(n => n !== node);
+      
+      // Insert at the new position
+      this.treeData.splice(newIndex, 0, node);
+
+      // Update the workflow data
+      this.updateWorkflowData();
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: `State moved ${direction}`
+      });
+    }
   }
 }

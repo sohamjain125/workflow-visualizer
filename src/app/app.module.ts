@@ -46,7 +46,8 @@ import { TruncatePipe } from './truncate.pipe';
     TooltipModule,
     ToastModule,
     CheckboxModule,
-    MultiSelectModule
+    MultiSelectModule,
+    
   ],
   providers: [MessageService,WorkflowDataService],
   bootstrap: [AppComponent]

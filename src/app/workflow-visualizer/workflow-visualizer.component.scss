@@ -1036,3 +1036,25 @@
   }
 }
 
+.history-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+  align-items: center;
+
+  button {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+}
+
+.left-section {
+  display: flex;
+  align-items: center;
+}
+

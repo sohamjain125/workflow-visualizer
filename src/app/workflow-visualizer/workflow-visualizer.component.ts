@@ -3,6 +3,7 @@ import { TreeNode, MenuItem, MessageService, TreeDragDropService } from 'primeng
 import { FileUpload } from 'primeng/fileupload';
 import { ChangeDetectionStrategy } from '@angular/core';
 import { WorkflowDataService } from '../service/workflow-data.service';
+import { cloneDeep } from 'lodash';
 
 interface WorkflowMetadata {
   _name: string;
@@ -280,6 +281,13 @@ export class WorkflowVisualizerComponent implements OnInit {
   newAddress: { label: string; value: string } = { label: '', value: '' };
   selectedNodeForAddress: TreeNode | null = null;
 
+  // Add history management properties
+  private historyStack: TreeNode[][] = [];
+  private currentHistoryIndex: number = -1;
+  private maxHistorySize: number = 50;
+  canUndo: boolean = false;
+  canRedo: boolean = false;
+
   constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
   }
@@ -415,6 +423,8 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   saveEdit() {
     if (this.selectedNode) {
+      const oldTreeData = this.createComparableTree(this.treeData);
+      
       this.selectedNode.data = {
         ...this.selectedNode.data,
         name: this.editForm.name,
@@ -456,6 +466,12 @@ export class WorkflowVisualizerComponent implements OnInit {
         saveToRelatedDoc: this.editForm.saveToRelatedDoc?.toString(),
         securePDF: this.editForm.securePDF?.toString()
       };
+
+      // Save to history if changes were made
+      const newTreeData = this.createComparableTree(this.treeData);
+      if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+        this.saveToHistory(this.treeData);
+      }
     }
     this.editDialogVisible = false;
     this.selectedNode = null;
@@ -482,6 +498,7 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   deleteNode(node: TreeNode) {
+    const oldTreeData = this.createComparableTree(this.treeData);
     const removeFromParent = (parent: TreeNode[], target: TreeNode) => {
       const index = parent.indexOf(target);
       if (index > -1) {
@@ -493,6 +510,12 @@ export class WorkflowVisualizerComponent implements OnInit {
       removeFromParent(node.parent.children || [], node);
     } else {
       removeFromParent(this.treeData, node);
+    }
+
+    // Save to history if changes were made
+    const newTreeData = this.createComparableTree(this.treeData);
+    if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+      this.saveToHistory(this.treeData);
     }
   }
 
@@ -555,6 +578,11 @@ export class WorkflowVisualizerComponent implements OnInit {
           this.treeData = [];
           return;
         }
+
+        // Save initial state to history
+        this.historyStack = [cloneDeep(this.treeData)];
+        this.currentHistoryIndex = 0;
+        this.updateUndoRedoState();
 
         this.messageService.add({
           severity: 'success',
@@ -915,13 +943,22 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   clearData() {
+    const oldTreeData = this.createComparableTree(this.treeData);
     this.treeData = [];
     this.fileUploaded = false;
+    
     // Reset the file upload component
     const fileUpload = document.querySelector('p-fileUpload') as any;
     if (fileUpload?.clear) {
       fileUpload.clear();
     }
+
+    // Save to history if changes were made
+    const newTreeData = this.createComparableTree(this.treeData);
+    if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+      this.saveToHistory(this.treeData);
+    }
+
     this.messageService.add({
       severity: 'info',
       summary: 'Reset',
@@ -995,6 +1032,7 @@ export class WorkflowVisualizerComponent implements OnInit {
     }
 
     // Add all nodes
+    const oldTreeData = this.createComparableTree(this.treeData);
     for (const nodeForm of this.multiNodeForm.nodes) {
       const newNode: TreeNode = {
         data: {
@@ -1006,7 +1044,6 @@ export class WorkflowVisualizerComponent implements OnInit {
       };
 
       if (this.selectedNode) {
-        // Check if we're trying to add a state inside another state
         if (nodeForm.type === 'state' && this.selectedNode.data.type === 'state') {
           this.messageService.add({
             severity: 'error',
@@ -1023,6 +1060,12 @@ export class WorkflowVisualizerComponent implements OnInit {
       } else {
         this.treeData.push(newNode);
       }
+    }
+
+    // Save to history if changes were made
+    const newTreeData = this.createComparableTree(this.treeData);
+    if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+      this.saveToHistory(this.treeData);
     }
 
     this.showAddNodeDialog = false;
@@ -1282,11 +1325,19 @@ export class WorkflowVisualizerComponent implements OnInit {
         }
       }
 
+      const oldTreeData = this.createComparableTree(this.treeData);
+
       // Update the tree structure
       this.updateTreeStructure(draggedNode, targetNode);
       
       // Update the workflow data
       this.updateWorkflowData();
+
+      // Save to history if changes were made
+      const newTreeData = this.createComparableTree(this.treeData);
+      if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+        this.saveToHistory(this.treeData);
+      }
       
       this.messageService.add({
         severity: 'success',
@@ -1432,6 +1483,7 @@ export class WorkflowVisualizerComponent implements OnInit {
   moveState(node: TreeNode, direction: 'up' | 'down') {
     if (node.data.type !== 'state') return;
 
+    const oldTreeData = this.createComparableTree(this.treeData);
     const stateNodes = this.treeData.filter(n => n.data.type === 'state');
     const currentIndex = stateNodes.indexOf(node);
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
@@ -1443,8 +1495,11 @@ export class WorkflowVisualizerComponent implements OnInit {
       // Insert at the new position
       this.treeData.splice(newIndex, 0, node);
 
-      // Update the workflow data
-      this.updateWorkflowData();
+      // Save to history if changes were made
+      const newTreeData = this.createComparableTree(this.treeData);
+      if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
+        this.saveToHistory(this.treeData);
+      }
 
       this.messageService.add({
         severity: 'success',
@@ -1505,5 +1560,64 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   isArray(value: any): boolean {
     return Array.isArray(value);
+  }
+
+  // Add history management methods
+  private saveToHistory(treeData: TreeNode[]) {
+    // Remove any future states if we're not at the end of the history
+    if (this.currentHistoryIndex < this.historyStack.length - 1) {
+      this.historyStack = this.historyStack.slice(0, this.currentHistoryIndex + 1);
+    }
+
+    // Add new state to history
+    this.historyStack.push(cloneDeep(treeData));
+    
+    // Remove oldest state if we exceed max size
+    if (this.historyStack.length > this.maxHistorySize) {
+      this.historyStack.shift();
+    } else {
+      this.currentHistoryIndex++;
+    }
+
+    this.updateUndoRedoState();
+  }
+
+  private updateUndoRedoState() {
+    this.canUndo = this.currentHistoryIndex > 0;
+    this.canRedo = this.currentHistoryIndex < this.historyStack.length - 1;
+  }
+
+  undo() {
+    if (this.canUndo) {
+      this.currentHistoryIndex--;
+      this.treeData = cloneDeep(this.historyStack[this.currentHistoryIndex]);
+      this.updateUndoRedoState();
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Undo',
+        detail: 'Last action undone'
+      });
+    }
+  }
+
+  redo() {
+    if (this.canRedo) {
+      this.currentHistoryIndex++;
+      this.treeData = cloneDeep(this.historyStack[this.currentHistoryIndex]);
+      this.updateUndoRedoState();
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Redo',
+        detail: 'Action redone'
+      });
+    }
+  }
+
+  // Add helper method to create comparable version of tree data
+  private createComparableTree(nodes: TreeNode[]): any[] {
+    return nodes.map(node => ({
+      data: { ...node.data },
+      children: node.children ? this.createComparableTree(node.children) : []
+    }));
   }
 }

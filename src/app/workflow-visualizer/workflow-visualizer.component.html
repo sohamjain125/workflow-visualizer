@@ -33,12 +33,25 @@
     <div class="table-toolbar">
       <div class="left-section">
         <h3>States Tree</h3>
-        <!-- <div class="search-section">
-          <span class="p-input-icon-left">
-            <i class="pi pi-search"></i>
-            <input pInputText [(ngModel)]="searchText" placeholder="Search nodes..." (input)="filterNodes()">
-          </span>
-        </div> -->
+        <!-- History Controls -->
+        <div class="history-controls">
+          <button pButton 
+                  type="button" 
+                  icon="pi pi-undo" 
+                  class="p-button-text" 
+                  [disabled]="!canUndo"
+                  (click)="undo()"
+                  pTooltip="Undo">
+          </button>
+          <button pButton 
+                  type="button" 
+                  icon="pi pi-refresh" 
+                  class="p-button-text" 
+                  [disabled]="!canRedo"
+                  (click)="redo()"
+                  pTooltip="Redo">
+          </button>
+        </div>
       </div>
       <div class="right-section">
         <p-fileUpload 
@@ -645,7 +658,7 @@
         <div class="p-field">
           <label>Building Part</label>
           <input pInputText [(ngModel)]="editForm.OPBuildingPart" class="p-inputtext-lg" style="width: 100%">
-              </div>
+        </div>
 
         <div class="p-field">
           <label>Combine Allotment</label>
@@ -653,7 +666,7 @@
                      [(ngModel)]="editForm.isCombineAllotment"
                      [style]="{'width': '100%'}">
           </p-dropdown>
-          </div>
+        </div>
 
         <div class="p-field">
           <label>Is Subdivision</label>

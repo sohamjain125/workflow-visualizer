@@ -376,13 +376,65 @@ export class WorkflowVisualizerComponent implements OnInit {
       return this.treeData;
     }
 
-    return this.treeData.filter(node => {
-      const matchesSearch = !this.searchText || 
-        JSON.stringify(node.data).toLowerCase().includes(this.searchText.toLowerCase());
-      const matchesType = !this.applicationType || 
-        node.data.type === this.applicationType;
-      return matchesSearch && matchesType;
-    });
+    return this.filterTreeNodes(this.treeData);
+  }
+
+  private filterTreeNodes(nodes: TreeNode[]): TreeNode[] {
+    const filteredNodes: TreeNode[] = [];
+    
+    for (const node of nodes) {
+      const filteredNode = this.filterNode(node);
+      if (filteredNode) {
+        filteredNodes.push(filteredNode);
+      }
+    }
+    
+    return filteredNodes;
+  }
+
+  private filterNode(node: TreeNode): TreeNode | null {
+    // Create a deep copy of the node
+    const newNode = cloneDeep(node);
+    
+    // Check if current node matches search criteria
+    const matchesSearch = !this.searchText || this.nodeMatchesSearch(newNode);
+    const matchesType = !this.applicationType || newNode.data.type === this.applicationType;
+    
+    // If node has children, filter them recursively
+    if (newNode.children && newNode.children.length > 0) {
+      newNode.children = this.filterTreeNodes(newNode.children);
+    }
+    
+    // Return node if it matches criteria or has matching children
+    if ((matchesSearch && matchesType) || (newNode.children && newNode.children.length > 0)) {
+      return newNode;
+    }
+    
+    return null;
+  }
+
+  private nodeMatchesSearch(node: TreeNode): boolean {
+    const searchText = this.searchText.toLowerCase();
+    
+    // Convert node data to string and check if it contains search text
+    const nodeString = JSON.stringify(node.data).toLowerCase();
+    if (nodeString.includes(searchText)) {
+      return true;
+    }
+    
+    // Check children recursively
+    if (node.children && node.children.length > 0) {
+      return node.children.some(child => this.nodeMatchesSearch(child));
+    }
+    
+    return false;
+  }
+
+  filterNodes() {
+    const filteredData = this.getFilteredData();
+    // Update the tree with filtered data
+    this.dragDropNodes = filteredData;
+    return filteredData;
   }
 
   startEdit(node: TreeNode) {
@@ -1183,27 +1235,6 @@ export class WorkflowVisualizerComponent implements OnInit {
       nodes: []
     };
     this.selectedNode = null;
-  }
-
-  // Add missing method
-  filterNodes() {
-    // If there's no search text or selected type, return all nodes
-    if (!this.searchText && !this.selectedApplicationType) {
-      return this.treeData;
-    }
-
-    // Filter nodes based on search text and selected type
-    const filteredData = this.treeData.filter(node => {
-      const matchesSearch = !this.searchText || 
-        node.data.name.toLowerCase().includes(this.searchText.toLowerCase());
-      
-      const matchesType = !this.selectedApplicationType || 
-        node.data.type === this.selectedApplicationType;
-
-      return matchesSearch && matchesType;
-    });
-
-    return filteredData;
   }
 
   toggleTableCollapse() {

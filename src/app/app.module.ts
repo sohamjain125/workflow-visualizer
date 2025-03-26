@@ -17,6 +17,7 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { SidebarModule } from 'primeng/sidebar';
 import { AppComponent } from './app.component';
 import { WorkflowVisualizerComponent } from './workflow-visualizer/workflow-visualizer.component';
 import { MessageService } from 'primeng/api';
@@ -47,7 +48,7 @@ import { TruncatePipe } from './truncate.pipe';
     ToastModule,
     CheckboxModule,
     MultiSelectModule,
-    
+    SidebarModule
   ],
   providers: [MessageService,WorkflowDataService],
   bootstrap: [AppComponent]

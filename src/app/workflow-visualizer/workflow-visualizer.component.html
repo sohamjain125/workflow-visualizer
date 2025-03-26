@@ -51,6 +51,14 @@
                   (click)="redo()"
                   pTooltip="Redo">
           </button>
+          <button pButton 
+                  type="button" 
+                  icon="pi pi-history" 
+                  class="p-button-text" 
+                  (click)="toggleChangeHistory()"
+                  [class.p-button-highlighted]="showChangeHistory"
+                  pTooltip="Show Change History">
+          </button>
         </div>
       </div>
       <div class="right-section">
@@ -725,4 +733,106 @@
     <button pButton label="Add" icon="pi pi-check" (click)="addNewAddress()"></button>
   </ng-template>
 </p-dialog>
+
+<p-sidebar [(visible)]="showChangeHistory" position="right" [style]="{width:'35em'}" styleClass="change-history-sidebar">
+  <ng-template pTemplate="header">
+    <div class="history-header">
+      <!-- <div class="header-main">
+        <i class="pi pi-history"></i>
+        <h3>Change History</h3>
+      </div> -->
+      <!-- <button pButton 
+              type="button" 
+              icon="pi pi-times" 
+              class="p-button-rounded p-button-text" 
+              (click)="showChangeHistory = false">
+      </button> -->
+    </div>
+  </ng-template>
+  
+  <div class="change-history-list">
+    <div *ngIf="changeHistory.length === 0" class="no-history">
+      <i class="pi pi-info-circle"></i>
+      <p>Your workflow changes will appear here</p>
+      <small>Make changes to your workflow to start tracking the history</small>
+    </div>
+    
+    <ng-container *ngFor="let change of changeHistory; let i = index">
+      <div class="change-history-item" 
+           [class.current]="i === currentHistoryIndex"
+           [class.past]="i < currentHistoryIndex"
+           [class.future]="i > currentHistoryIndex">
+        
+        <!-- Change Icon and Status -->
+        <div class="change-status-indicator">
+          <div class="change-type-icon" [class.active]="i === currentHistoryIndex">
+            <i class="pi" [ngClass]="{
+              'pi-pencil': change.description.includes('Edit'),
+              'pi-trash': change.description.includes('Delete'),
+              'pi-plus': change.description.includes('Add'),
+              'pi-arrows-h': change.description.includes('Move')
+            }"></i>
+          </div>
+          <div class="timeline-line" *ngIf="i < changeHistory.length - 1"></div>
+        </div>
+
+        <!-- Change Content -->
+        <div class="change-content">
+          <div class="change-header">
+            <div class="change-main">
+              <span class="change-description">{{change.description}}</span>
+              <span class="change-badge" *ngIf="i === currentHistoryIndex">Current State</span>
+            </div>
+            <span class="change-time" [title]="change.timestamp | date:'MMM d, yyyy, h:mm:ss a'">
+              {{change.timestamp | date:'h:mm a'}}
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="change-actions" [class.show]="i !== currentHistoryIndex">
+            <button pButton 
+                    *ngIf="i < currentHistoryIndex"
+                    type="button"
+                    class="p-button-text p-button-sm revert-button"
+                    (click)="undo()"
+                    pTooltip="Revert to this state">
+              <i class="pi pi-undo"></i>
+              <span>Revert to this</span>
+            </button>
+            <button pButton 
+                    *ngIf="i > currentHistoryIndex"
+                    type="button"
+                    class="p-button-text p-button-sm restore-button"
+                    (click)="redo()"
+                    pTooltip="Restore this change">
+              <i class="pi pi-refresh"></i>
+              <span>Restore this</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Quick Actions Footer -->
+  <div class="history-footer" *ngIf="changeHistory.length > 0">
+    <button pButton 
+            type="button"
+            class="p-button-outlined"
+            [disabled]="!canUndo"
+            (click)="undo()">
+      <i class="pi pi-undo"></i>
+      <span>Undo Last Change</span>
+    </button>
+    <button pButton 
+            type="button"
+            class="p-button-outlined"
+            [disabled]="!canRedo"
+            (click)="redo()">
+      <i class="pi pi-refresh"></i>
+      <span>Redo Last Change</span>
+    </button>
+  </div>
+  
+</p-sidebar>
 

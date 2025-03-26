@@ -138,6 +138,12 @@ interface NodeTypeConfig {
   parentTypes: string[];
 }
 
+interface ChangeHistoryEntry {
+  description: string;
+  timestamp: Date;
+  canUndo: boolean;
+}
+
 @Component({
   selector: 'app-workflow-visualizer',
   templateUrl: './workflow-visualizer.component.html',
@@ -283,10 +289,14 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   // Add history management properties
   private historyStack: TreeNode[][] = [];
-  private currentHistoryIndex: number = -1;
+  public currentHistoryIndex: number = -1;
   private maxHistorySize: number = 50;
   canUndo: boolean = false;
   canRedo: boolean = false;
+
+  // Add change history properties
+  changeHistory: ChangeHistoryEntry[] = [];
+  showChangeHistory: boolean = false;
 
   constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
@@ -424,6 +434,7 @@ export class WorkflowVisualizerComponent implements OnInit {
   saveEdit() {
     if (this.selectedNode) {
       const oldTreeData = this.createComparableTree(this.treeData);
+      const oldName = this.selectedNode.data.name;
       
       this.selectedNode.data = {
         ...this.selectedNode.data,
@@ -470,7 +481,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       // Save to history if changes were made
       const newTreeData = this.createComparableTree(this.treeData);
       if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
-        this.saveToHistory(this.treeData);
+        this.saveToHistory(this.treeData, `Edited ${this.selectedNode.data.type} "${oldName}" to "${this.editForm.name}"`);
       }
     }
     this.editDialogVisible = false;
@@ -515,7 +526,7 @@ export class WorkflowVisualizerComponent implements OnInit {
     // Save to history if changes were made
     const newTreeData = this.createComparableTree(this.treeData);
     if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
-      this.saveToHistory(this.treeData);
+      this.saveToHistory(this.treeData, `Deleted ${node.data.type} "${node.data.name}"`);
     }
   }
 
@@ -1033,6 +1044,8 @@ export class WorkflowVisualizerComponent implements OnInit {
 
     // Add all nodes
     const oldTreeData = this.createComparableTree(this.treeData);
+    const addedNodes: string[] = [];
+    
     for (const nodeForm of this.multiNodeForm.nodes) {
       const newNode: TreeNode = {
         data: {
@@ -1044,15 +1057,6 @@ export class WorkflowVisualizerComponent implements OnInit {
       };
 
       if (this.selectedNode) {
-        if (nodeForm.type === 'state' && this.selectedNode.data.type === 'state') {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'States cannot be nested inside other states'
-          });
-          return;
-        }
-
         if (!this.selectedNode.children) {
           this.selectedNode.children = [];
         }
@@ -1060,12 +1064,14 @@ export class WorkflowVisualizerComponent implements OnInit {
       } else {
         this.treeData.push(newNode);
       }
+      addedNodes.push(`${nodeForm.type} "${newNode.data.name}"`);
     }
 
     // Save to history if changes were made
     const newTreeData = this.createComparableTree(this.treeData);
     if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
-      this.saveToHistory(this.treeData);
+      const parentName = this.selectedNode ? ` to ${this.selectedNode.data.type} "${this.selectedNode.data.name}"` : '';
+      this.saveToHistory(this.treeData, `Added ${addedNodes.join(', ')}${parentName}`);
     }
 
     this.showAddNodeDialog = false;
@@ -1336,7 +1342,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       // Save to history if changes were made
       const newTreeData = this.createComparableTree(this.treeData);
       if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
-        this.saveToHistory(this.treeData);
+        this.saveToHistory(this.treeData, `Moved ${draggedNodeType} "${draggedNode.data.name}" to ${targetNodeType} "${targetNode.data.name}"`);
       }
       
       this.messageService.add({
@@ -1498,7 +1504,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       // Save to history if changes were made
       const newTreeData = this.createComparableTree(this.treeData);
       if (JSON.stringify(oldTreeData) !== JSON.stringify(newTreeData)) {
-        this.saveToHistory(this.treeData);
+        this.saveToHistory(this.treeData, `Moved state "${node.data.name}" ${direction}`);
       }
 
       this.messageService.add({
@@ -1563,18 +1569,29 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   // Add history management methods
-  private saveToHistory(treeData: TreeNode[]) {
+  private saveToHistory(treeData: TreeNode[], changeDescription: string = '') {
     // Remove any future states if we're not at the end of the history
     if (this.currentHistoryIndex < this.historyStack.length - 1) {
       this.historyStack = this.historyStack.slice(0, this.currentHistoryIndex + 1);
+      this.changeHistory = this.changeHistory.slice(0, this.currentHistoryIndex + 1);
     }
 
     // Add new state to history
     this.historyStack.push(cloneDeep(treeData));
     
+    // Add change description to history
+    if (changeDescription) {
+      this.changeHistory.push({
+        description: changeDescription,
+        timestamp: new Date(),
+        canUndo: true
+      });
+    }
+    
     // Remove oldest state if we exceed max size
     if (this.historyStack.length > this.maxHistorySize) {
       this.historyStack.shift();
+      this.changeHistory.shift();
     } else {
       this.currentHistoryIndex++;
     }
@@ -1592,10 +1609,12 @@ export class WorkflowVisualizerComponent implements OnInit {
       this.currentHistoryIndex--;
       this.treeData = cloneDeep(this.historyStack[this.currentHistoryIndex]);
       this.updateUndoRedoState();
+      
+      const undoneChange = this.changeHistory[this.currentHistoryIndex + 1];
       this.messageService.add({
         severity: 'info',
         summary: 'Undo',
-        detail: 'Last action undone'
+        detail: `Undid: ${undoneChange?.description || 'Last action'}`
       });
     }
   }
@@ -1605,12 +1624,18 @@ export class WorkflowVisualizerComponent implements OnInit {
       this.currentHistoryIndex++;
       this.treeData = cloneDeep(this.historyStack[this.currentHistoryIndex]);
       this.updateUndoRedoState();
+      
+      const redoneChange = this.changeHistory[this.currentHistoryIndex];
       this.messageService.add({
         severity: 'info',
         summary: 'Redo',
-        detail: 'Action redone'
+        detail: `Redid: ${redoneChange?.description || 'Action'}`
       });
     }
+  }
+
+  toggleChangeHistory() {
+    this.showChangeHistory = !this.showChangeHistory;
   }
 
   // Add helper method to create comparable version of tree data

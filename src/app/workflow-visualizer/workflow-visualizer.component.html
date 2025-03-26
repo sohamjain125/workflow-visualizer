@@ -520,41 +520,41 @@
 
     <!-- Action specific fields -->
     <div *ngIf="selectedNode?.data.type === 'action'">
-      <div class="p-field">
-        <label>Action Type</label>
-        <p-dropdown [options]="actionTypes" 
-                   [(ngModel)]="editForm.actionType"
-                   [style]="{'width': '100%'}"
-                   placeholder="Select Action Type">
+      <div class="p-field" *ngIf="editForm.type === 'action'">
+        <label for="actionType">Action Type</label>
+        <p-dropdown 
+          id="actionType"
+          [options]="actionTypes"
+          [(ngModel)]="editForm.actionType"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select Action Type"
+          [style]="{'width': '100%'}">
         </p-dropdown>
       </div>
 
-      <div class="p-field">
-        <label>Addressee</label>
-        <ng-container *ngIf="editForm.actionType === 'APICall'">
-          <textarea pInputTextarea 
-                    [(ngModel)]="editForm.addressee" 
-                    [rows]="3" 
-                    placeholder="Enter API endpoint">
-          </textarea>
-        </ng-container>
-        <ng-container *ngIf="editForm.actionType !== 'APICall'">
-          <div class="addressee-container">
-            <p-multiSelect [options]="addresseeOptions" 
-                          [(ngModel)]="editForm.addressee"
-                          [style]="{'width': '500px'}"
-                          placeholder="Select Addressees"
-                          [filter]="true">
-            </p-multiSelect>
-            <button pButton 
-                    type="button" 
-                    icon="pi pi-plus" 
-                    class="p-button-text" 
-                    (click)="selectedNode && openAddAddressDialog(selectedNode)"
-                    *ngIf="editForm.actionType === 'email'">
-            </button>
-          </div>
-        </ng-container>
+      <div class="p-field" *ngIf="editForm.type === 'action'">
+        <label for="addressee">Addressee</label>
+        <p-dropdown 
+          *ngIf="editForm.actionType === 'APICall'"
+          id="addressee"
+          [options]="apiCallOptions"
+          [(ngModel)]="editForm.addressee"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select API Call Type"
+          [style]="{'width': '100%'}">
+        </p-dropdown>
+        <p-multiSelect 
+          *ngIf="editForm.actionType !== 'APICall'"
+          id="addressee"
+          [options]="addresseeOptions"
+          [(ngModel)]="editForm.addressee"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select Addressees"
+          [style]="{'width': '100%'}">
+        </p-multiSelect>
       </div>
 
       <div class="p-field" *ngIf="editForm.type === 'action' && editForm.actionType === 'email'">

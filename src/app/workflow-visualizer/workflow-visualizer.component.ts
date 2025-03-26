@@ -182,6 +182,22 @@ export class WorkflowVisualizerComponent implements OnInit {
     { label: 'APICall', value: 'APICall' }
   ];
 
+  apiCallOptions: Array<{label: string, value: string}> = [
+    { label: 'Accept', value: 'Accept' },
+    { label: 'Assessment', value: 'Assessment' },
+    { label: 'Assigned Surveyor', value: 'AssignedSurveyor' },
+    { label: 'Complete Inspection', value: 'CompleteInspection' },
+    { label: 'Determination', value: 'Determination' },
+    { label: 'Determine', value: 'Determine' },
+    { label: 'Initiate Inspection', value: 'InitiateInspection' },
+    { label: 'Perform Inspection', value: 'PerformInspection' },
+    { label: 'Provide Dev Spec', value: 'ProvideDevspec' },
+    { label: 'Reassign', value: 'Reassign' },
+    { label: 'Referral Request', value: 'RefrralRequest' },
+    { label: 'Request Additional Info', value: 'ReqAddInfo' },
+    { label: 'Return', value: 'Return' }
+  ];
+
   nodeTypeConfigs: { [key: string]: NodeTypeConfig } = {
     state: {
       allowedChildren: ['transition'],
@@ -313,17 +329,12 @@ export class WorkflowVisualizerComponent implements OnInit {
         data: { type: 'state', name: 'New' },
         children: [
           {
-            data: { type: 'transition', name: 'Submit' },
-            children: [
-              {
-                data: { 
-                  type: 'action',
-                  name: 'Send Email',
-                  actionType: 'email',
-                  addressee: ['applicant']
-                }
-              }
-            ]
+            data: { 
+              type: 'action',
+              name: 'Send Email',
+              actionType: 'email',
+              addressee: ['applicant']
+            }
           }
         ]
       },

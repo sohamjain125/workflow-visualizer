@@ -73,11 +73,6 @@
         <div class="tree-container" *ngIf="fileUploaded">
           <p-tree 
             [value]="treeData" 
-            [draggableNodes]="true" 
-            [droppableNodes]="true"
-            (onDragStart)="onDragStart($event)"
-            (onDragEnd)="onDragEnd($event)"
-            (onDrop)="onDrop($event)"
             [filter]="true"
             filterMode="strict"
             class="workflow-tree">

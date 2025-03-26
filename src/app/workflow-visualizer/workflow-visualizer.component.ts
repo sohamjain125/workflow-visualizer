@@ -355,8 +355,10 @@ export class WorkflowVisualizerComponent implements OnInit {
       
       // Action properties
       actionType: node.data.actionType,
-      addressee: Array.isArray(node.data.addressee) ? node.data.addressee : 
-                (node.data.addressee ? node.data.addressee.split(',').map((a: string) => a.trim()) : []),
+      addressee: node.data.actionType === 'APICall' ? 
+        node.data.addressee : 
+        (Array.isArray(node.data.addressee) ? node.data.addressee : 
+        (node.data.addressee ? node.data.addressee.split(',').map((a: string) => a.trim()) : [])),
       subject: node.data.subject,
       template: node.data.template,
       content: node.data.content,
@@ -400,7 +402,9 @@ export class WorkflowVisualizerComponent implements OnInit {
         
         // Action properties
         actionType: this.editForm.actionType,
-        addressee: Array.isArray(this.editForm.addressee) ? this.editForm.addressee.join(',') : '',
+        addressee: this.editForm.actionType === 'APICall' ? 
+          this.editForm.addressee : 
+          (Array.isArray(this.editForm.addressee) ? this.editForm.addressee.join(',') : ''),
         subject: this.editForm.subject,
         template: this.editForm.template,
         content: this.editForm.content,
@@ -1077,7 +1081,11 @@ export class WorkflowVisualizerComponent implements OnInit {
         break;
       case 'action':
         data.actionType = nodeForm.actionType;
-        data.addressee = nodeForm.addressee;
+        if (nodeForm.actionType === 'APICall') {
+          data.addressee = nodeForm.addressee;
+        } else {
+          data.addressee = Array.isArray(nodeForm.addressee) ? nodeForm.addressee : [];
+        }
         data.subject = nodeForm.subject;
         data.template = nodeForm.template;
         data.content = nodeForm.content;

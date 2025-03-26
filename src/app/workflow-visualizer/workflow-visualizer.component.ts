@@ -249,7 +249,14 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   dragDropNodes: TreeNode[] = [];
   isDragging: boolean = false;
-  workflowData: any = null;
+  workflowData: WorkflowData = {
+    _name: "BuildingPermit",
+    _initialStatus: "New",
+    _EmailAdmin: "yes",
+    _SMSAdmin: "yes",
+    _PreAppInitStatus: "NewPreApplication",
+    state: []
+  };
   nodeMenu: MenuItem[] = [];
   draggedNode: TreeNode | null = null;
 
@@ -362,7 +369,7 @@ export class WorkflowVisualizerComponent implements OnInit {
       addressee: node.data.actionType === 'APICall' ? 
         node.data.addressee : 
         (Array.isArray(node.data.addressee) ? node.data.addressee : 
-        (node.data.addressee ? node.data.addressee.split(',').map((a: string) => a.trim()) : [])),
+        (typeof node.data.addressee === 'string' ? node.data.addressee.split(',').map((a: string) => a.trim()) : [])),
       subject: node.data.subject,
       template: node.data.template,
       content: node.data.content,
@@ -408,7 +415,7 @@ export class WorkflowVisualizerComponent implements OnInit {
         actionType: this.editForm.actionType,
         addressee: this.editForm.actionType === 'APICall' ? 
           this.editForm.addressee : 
-          (Array.isArray(this.editForm.addressee) ? this.editForm.addressee.join(',') : ''),
+          (Array.isArray(this.editForm.addressee) ? this.editForm.addressee : []),
         subject: this.editForm.subject,
         template: this.editForm.template,
         content: this.editForm.content,
@@ -1088,7 +1095,9 @@ export class WorkflowVisualizerComponent implements OnInit {
         if (nodeForm.actionType === 'APICall') {
           data.addressee = nodeForm.addressee;
         } else {
-          data.addressee = Array.isArray(nodeForm.addressee) ? nodeForm.addressee : [];
+          const addresseeValue = nodeForm.addressee as string | string[];
+          data.addressee = Array.isArray(addresseeValue) ? addresseeValue : 
+            (typeof addresseeValue === 'string' ? addresseeValue.split(',').map((a: string) => a.trim()) : []);
         }
         data.subject = nodeForm.subject;
         data.template = nodeForm.template;
@@ -1281,16 +1290,25 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   private updateWorkflowData() {
+    if (!this.workflowData) {
+      this.workflowData = {
+        _name: "BuildingPermit",
+        _initialStatus: "New",
+        _EmailAdmin: "yes",
+        _SMSAdmin: "yes",
+        _PreAppInitStatus: "NewPreApplication",
+        state: []
+      };
+    }
+
     // Update the workflow data structure based on the new tree structure
-    this.workflowData.state = this.treeData.map(node => {
-      if (node.data.type === 'state') {
-        return {
-          _name: node.data.name,
-          _IdleDays: node.data.idleDays || "0"
-        };
-      }
-      return null;
-    }).filter(Boolean);
+    this.workflowData.state = this.treeData
+      .filter(node => node.data.type === 'state')
+      .map(node => ({
+        _name: node.data.name,
+        _IdleDays: node.data.idleDays || "0",
+        _assignedStaff: node.data.assignedStaff || undefined
+      }));
   }
 
   validateDragDrop(event: any): boolean {
@@ -1430,5 +1448,9 @@ export class WorkflowVisualizerComponent implements OnInit {
     });
 
     this.cancelAddAddress();
+  }
+
+  isArray(value: any): boolean {
+    return Array.isArray(value);
   }
 }

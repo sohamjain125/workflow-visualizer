@@ -141,7 +141,10 @@
                       <div *ngSwitchCase="'action'" class="details-container">
                         <ng-container [ngSwitch]="node.data.actionType">
                           <div *ngSwitchCase="'email'" class="details-group">
-                            <span class="detail-item"><i class="pi pi-envelope"></i> {{node.data.addressee?.join(', ')}}</span>
+                            <span class="detail-item">
+                              <i class="pi pi-envelope"></i> 
+                              {{isArray(node.data.addressee) ? node.data.addressee.join(', ') : node.data.addressee}}
+                            </span>
                             <span *ngIf="node.data.subject" class="detail-item">
                               <i class="pi pi-info-circle"></i> {{ node.data.subject | truncate: 40 }}
                             </span>
@@ -149,11 +152,17 @@
                             <span *ngIf="node.data.previewOnly" class="detail-item"><i class="pi pi-eye"></i> Preview Only</span>
                           </div>
                           <div *ngSwitchCase="'sms'" class="details-group">
-                            <span class="detail-item"><i class="pi pi-mobile"></i> {{node.data.addressee?.join(', ')}}</span>
+                            <span class="detail-item">
+                              <i class="pi pi-mobile"></i> 
+                              {{isArray(node.data.addressee) ? node.data.addressee.join(', ') : node.data.addressee}}
+                            </span>
                             <span *ngIf="node.data.content" class="detail-item"><i class="pi pi-comment"></i> {{node.data.content}}</span>
                           </div>
                           <div *ngSwitchCase="'task'" class="details-group">
-                            <span class="detail-item"><i class="pi pi-user"></i> {{node.data.addressee?.join(', ')}}</span>
+                            <span class="detail-item">
+                              <i class="pi pi-user"></i> 
+                              {{isArray(node.data.addressee) ? node.data.addressee.join(', ') : node.data.addressee}}
+                            </span>
                             <span *ngIf="node.data.isReviewable" class="detail-item"><i class="pi pi-check-square"></i> Reviewable</span>
                           </div>
                           <div *ngSwitchCase="'document'" class="details-group">

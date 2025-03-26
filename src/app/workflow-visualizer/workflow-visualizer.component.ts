@@ -253,6 +253,10 @@ export class WorkflowVisualizerComponent implements OnInit {
   nodeMenu: MenuItem[] = [];
   draggedNode: TreeNode | null = null;
 
+  showAddAddressDialog: boolean = false;
+  newAddress: { label: string; value: string } = { label: '', value: '' };
+  selectedNodeForAddress: TreeNode | null = null;
+
   constructor( private workflowDataService: WorkflowDataService,private messageService: MessageService) {
     this.initializeSampleData();
   }
@@ -1377,5 +1381,54 @@ export class WorkflowVisualizerComponent implements OnInit {
         detail: `State moved ${direction}`
       });
     }
+  }
+
+  openAddAddressDialog(node: TreeNode) {
+    this.selectedNodeForAddress = node;
+    this.newAddress = { label: '', value: '' };
+    this.showAddAddressDialog = true;
+  }
+
+  cancelAddAddress() {
+    this.showAddAddressDialog = false;
+    this.selectedNodeForAddress = null;
+    this.newAddress = { label: '', value: '' };
+  }
+
+  addNewAddress() {
+    if (!this.newAddress.label || !this.newAddress.value) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Please fill in both label and value'
+      });
+      return;
+    }
+
+    // Add the new address to the options
+    this.addresseeOptions.push({
+      label: this.newAddress.label,
+      value: this.newAddress.value
+    });
+
+    // Add the new address to the selected node's addressees
+    if (this.selectedNodeForAddress) {
+      const currentAddressees = Array.isArray(this.selectedNodeForAddress.data.addressee) 
+        ? this.selectedNodeForAddress.data.addressee 
+        : [];
+      
+      this.selectedNodeForAddress.data.addressee = [
+        ...currentAddressees,
+        this.newAddress.value
+      ];
+    }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'New address added successfully'
+    });
+
+    this.cancelAddAddress();
   }
 }

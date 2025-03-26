@@ -360,14 +360,24 @@
               </textarea>
             </ng-container>
             <ng-container *ngIf="node.actionType !== 'APICall'">
-              <p-multiSelect 
-                [options]="addresseeOptions"
-                [(ngModel)]="node.addressee"
-                placeholder="Select Addressees"
-                optionLabel="label"
-                optionValue="value"
-                [required]="true">
-              </p-multiSelect>
+              <div class="addressee-container">
+                <p-multiSelect 
+                  [options]="addresseeOptions"
+                  [(ngModel)]="node.addressee"
+                  placeholder="Select Addressees"
+                  optionLabel="label"
+                  optionValue="value"
+                  [required]="true"
+                  [style]="{'width': 'calc(100% - 40px)'}">
+                </p-multiSelect>
+                <button pButton 
+                        type="button" 
+                        icon="pi pi-plus" 
+                        class="p-button-text" 
+                        (click)="openAddAddressDialog(node)"
+                        *ngIf="node.actionType === 'email'">
+                </button>
+              </div>
             </ng-container>
           </div>
 
@@ -518,12 +528,21 @@
           </textarea>
         </ng-container>
         <ng-container *ngIf="editForm.actionType !== 'APICall'">
-          <p-multiSelect [options]="addresseeOptions" 
-                        [(ngModel)]="editForm.addressee"
-                        [style]="{'width': '100%'}"
-                        placeholder="Select Addressees"
-                        [filter]="true">
-          </p-multiSelect>
+          <div class="addressee-container">
+            <p-multiSelect [options]="addresseeOptions" 
+                          [(ngModel)]="editForm.addressee"
+                          [style]="{'width': '500px'}"
+                          placeholder="Select Addressees"
+                          [filter]="true">
+            </p-multiSelect>
+            <button pButton 
+                    type="button" 
+                    icon="pi pi-plus" 
+                    class="p-button-text" 
+                    (click)="selectedNode && openAddAddressDialog(selectedNode)"
+                    *ngIf="editForm.actionType === 'email'">
+            </button>
+          </div>
         </ng-container>
       </div>
 
@@ -659,6 +678,27 @@
   <ng-template pTemplate="footer">
     <button pButton label="Cancel" icon="pi pi-times" (click)="closeJsonEditor()" class="p-button-text"></button>
     <button pButton label="Apply" icon="pi pi-check" (click)="applyJsonChanges()"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Add New Address Dialog -->
+<p-dialog [(visible)]="showAddAddressDialog" 
+          header="Add New Address" 
+          [modal]="true" 
+          [style]="{width: '400px'}">
+  <div class="p-fluid">
+    <div class="p-field">
+      <label>Address Label</label>
+      <input pInputText [(ngModel)]="newAddress.label" placeholder="Enter label">
+    </div>
+    <div class="p-field">
+      <label>Address Value</label>
+      <input pInputText [(ngModel)]="newAddress.value" placeholder="Enter value">
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancel" icon="pi pi-times" (click)="cancelAddAddress()" class="p-button-text"></button>
+    <button pButton label="Add" icon="pi pi-check" (click)="addNewAddress()"></button>
   </ng-template>
 </p-dialog>
 

@@ -682,7 +682,7 @@ export class WorkflowVisualizerComponent implements OnInit {
     return {
       data: {
         type: 'action',
-        name: action._template || action._content || 'Unnamed Action',
+        name: action._template || action._content || action._addressee || 'Unnamed Action',
         actionType: action._type,
         addressee: action._addressee ? action._addressee.split(',') : [],
         subject: action._subject || '',

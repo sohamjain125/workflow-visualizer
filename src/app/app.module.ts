@@ -21,11 +21,13 @@ import { AppComponent } from './app.component';
 import { WorkflowVisualizerComponent } from './workflow-visualizer/workflow-visualizer.component';
 import { MessageService } from 'primeng/api';
 import { WorkflowDataService } from './service/workflow-data.service';
+import { TruncatePipe } from './truncate.pipe';
 
 @NgModule({
   declarations: [
     AppComponent,
-    WorkflowVisualizerComponent
+    WorkflowVisualizerComponent,
+    TruncatePipe
   ],
   imports: [
     BrowserModule,

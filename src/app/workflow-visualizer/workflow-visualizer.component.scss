@@ -951,3 +951,36 @@
   }
 }
 
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin-top: 1rem;
+  padding: 2rem;
+  text-align: center;
+
+  .empty-state-content {
+    max-width: 400px;
+    
+    h2 {
+      margin: 1rem 0;
+      color: #495057;
+    }
+
+    p {
+      color: #6c757d;
+      margin-bottom: 1.5rem;
+    }
+
+    :deep(.p-fileupload) {
+      .p-button {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+      }
+    }
+  }
+}
+

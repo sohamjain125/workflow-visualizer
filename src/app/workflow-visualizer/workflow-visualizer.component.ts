@@ -636,22 +636,20 @@ export class WorkflowVisualizerComponent implements OnInit {
   }
 
   onFileUpload(event: any) {
-    if (event.currentFiles && event.currentFiles.length > 0) {
-      const file = event.currentFiles[0];
+    const file = event.files[0];
+    if (file) {
       const reader = new FileReader();
-      
       reader.onload = (e: any) => {
         try {
-          const json = JSON.parse(e.target.result);
-          console.log('Parsed JSON:', json); // Debug log
-          this.loadWorkflow(json);
+          const jsonData = JSON.parse(e.target.result);
+          this.loadWorkflow(jsonData);
+          this.fileUploaded = true;
           this.messageService.add({
             severity: 'success',
             summary: 'Success',
-            detail: 'File uploaded successfully'
+            detail: 'JSON file loaded successfully'
           });
         } catch (error) {
-          console.error('Error parsing JSON:', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Error',
@@ -659,16 +657,6 @@ export class WorkflowVisualizerComponent implements OnInit {
           });
         }
       };
-
-      reader.onerror = (e) => {
-        console.error('Error reading file:', e);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to read file'
-        });
-      };
-
       reader.readAsText(file);
     }
   }

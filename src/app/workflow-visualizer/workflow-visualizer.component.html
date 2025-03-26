@@ -12,12 +12,12 @@
              placeholder="Enter License ID">
     </div>
     <div class="form-group">
-      <label for="applicationId">Application ID</label>
+      <label for="applicationId">Application Type ID</label>
       <input pInputText 
              id="applicationId"
              type="number"
              [(ngModel)]="applicationId"
-             placeholder="Enter Application ID">
+             placeholder="Enter Application Type ID">
     </div>
     <button pButton 
             type="button" 
@@ -28,27 +28,26 @@
   </div>
 
   <!-- States Container with Table-like Structure -->
-  <div class="states-container">
+  <div class="states-container" *ngIf="fileUploaded">
     <!-- Toolbar with title, search, and actions -->
     <div class="table-toolbar">
       <div class="left-section">
         <h3>States Tree</h3>
         <div class="search-section">
           <span class="p-input-icon-left">
-    <i class="pi pi-search"></i>
+            <i class="pi pi-search"></i>
             <input pInputText [(ngModel)]="searchText" placeholder="Search nodes..." (input)="filterNodes()">
-  </span>
-         
+          </span>
         </div>
       </div>
       <div class="right-section">
-  <p-fileUpload 
-    mode="basic"
+        <p-fileUpload 
+          mode="basic"
           chooseLabel="Upload JSON" 
-    [auto]="true"
+          [auto]="true"
           accept=".json" 
           (onSelect)="onFileUpload($event)">
-  </p-fileUpload>
+        </p-fileUpload>
         <button pButton type="button" label="View/Edit JSON" (click)="openJsonEditor()"></button>
         <button pButton type="button" label="Download" [disabled]="!treeData.length" (click)="downloadJson()"></button>
         <button pButton type="button" label="Add Node" icon="pi pi-plus" (click)="openAddNodeDialog()"></button>
@@ -134,7 +133,10 @@
                       <ng-container [ngSwitch]="node.data.actionType">
                         <div *ngSwitchCase="'email'" class="details-group">
                           <span class="detail-item"><i class="pi pi-envelope"></i> {{node.data.addressee?.join(', ')}}</span>
-                          <span *ngIf="node.data.subject" class="detail-item"><i class="pi pi-info-circle"></i> {{node.data.subject}}</span>
+                          <span *ngIf="node.data.subject" class="detail-item">
+                            <i class="pi pi-info-circle"></i> {{ node.data.subject | truncate: 40 }}
+                          </span>
+                          
                           <span *ngIf="node.data.previewOnly" class="detail-item"><i class="pi pi-eye"></i> Preview Only</span>
                         </div>
                         <div *ngSwitchCase="'sms'" class="details-group">
@@ -218,6 +220,22 @@
           </ng-template>
         </p-tree>
       </div>
+    </div>
+  </div>
+
+  <!-- Empty State Message -->
+  <div class="empty-state" *ngIf="!fileUploaded">
+    <div class="empty-state-content">
+      <i class="pi pi-file-import" style="font-size: 3rem; color: #666;"></i>
+      <h2>No Workflow Data</h2>
+      <p>Upload a JSON file to visualize your workflow</p>
+      <p-fileUpload 
+        mode="basic"
+        chooseLabel="Upload JSON" 
+        [auto]="true"
+        accept=".json" 
+        (onSelect)="onFileUpload($event)">
+      </p-fileUpload>
     </div>
   </div>
 </div>

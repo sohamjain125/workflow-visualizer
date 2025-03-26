@@ -18,4 +18,8 @@ export class WorkflowDataService {
   getAddressees(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/addressees`);
   }
+
+  getAssignedStaff(licenseId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/assignedstaff?licenseId=${licenseId}`);
+  }
 }

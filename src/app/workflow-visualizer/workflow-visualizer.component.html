@@ -470,7 +470,14 @@
       </div>
       <div class="p-field">
         <label>Assigned Staff</label>
-        <input pInputText [(ngModel)]="editForm.assignedStaff" class="p-inputtext-lg" style="width: 100%">
+        <p-dropdown 
+          [options]="assignedStaffOptions"
+          [(ngModel)]="editForm.assignedStaff"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select Staff"
+          [style]="{'width': '100%'}">
+        </p-dropdown>
       </div>
     </div>
 

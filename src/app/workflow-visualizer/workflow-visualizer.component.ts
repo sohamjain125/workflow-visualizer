@@ -149,7 +149,7 @@ export class WorkflowVisualizerComponent implements OnInit {
 
   emailTemplates: any[] = [];
   addresseeOptions: any[] = [];
-
+  assignedStaffOptions: any[] = [];
   isTableCollapsed: boolean = false;
   searchText: string = '';
   applicationTypes: any[] = [
@@ -1161,14 +1161,35 @@ export class WorkflowVisualizerComponent implements OnInit {
       return;
     }
 
-    // Call the service with the IDs
+    // Get assigned staff
+    this.workflowDataService.getAssignedStaff(this.licenseId).subscribe({
+      next: (staff) => {
+        this.assignedStaffOptions = staff;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Staff list loaded successfully'
+        });
+        console.log('Assigned staff loaded:', staff);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load assigned staff'
+        });
+        console.error('Error loading assigned staff:', error);
+      }
+    });
+
+    // Get email templates
     this.workflowDataService.getEmailTemplates(this.licenseId, this.applicationId).subscribe({
       next: (templates) => {
         this.emailTemplates = templates;
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
-          detail: 'Sent successfully'
+          detail: 'Email templates loaded successfully'
         });
         console.log('Email templates loaded:', templates);
       },
@@ -1179,6 +1200,27 @@ export class WorkflowVisualizerComponent implements OnInit {
           detail: 'Failed to load email templates'
         });
         console.error('Error loading templates:', error);
+      }
+    });
+
+    // Get addressees
+    this.workflowDataService.getAddressees().subscribe({
+      next: (addressees) => {
+        this.addresseeOptions = addressees;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Addressees loaded successfully'
+        });
+        console.log('Addressees loaded:', addressees);
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load addressees'
+        });
+        console.error('Error loading addressees:', error);
       }
     });
   }

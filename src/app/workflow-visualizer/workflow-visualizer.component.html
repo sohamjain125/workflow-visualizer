@@ -374,6 +374,19 @@
             </p-dropdown>
           </div>
 
+          <!-- SMS Template Dropdown - Show only when action type is 'sms' -->
+          <div *ngIf="node.actionType === 'sms'" class="p-field">
+            <label>SMS Template</label>
+            <p-dropdown 
+              [options]="smsTemplates"
+              [(ngModel)]="node.template"
+              placeholder="Select SMS Template"
+              optionLabel="label"
+              optionValue="value"
+              [required]="true">
+            </p-dropdown>
+          </div>
+
           <!-- Addressee Multi-Select -->
           <div class="p-field">
             <label>Addressee</label>
@@ -590,6 +603,19 @@
         </p-dropdown>
       </div>
       
+      <!-- SMS Template Dropdown in Edit Dialog -->
+      <div class="p-field" *ngIf="editForm.type === 'action' && editForm.actionType === 'sms'">
+        <label for="template">SMS Template</label>
+        <p-dropdown 
+          [options]="smsTemplates"
+          [(ngModel)]="editForm.template"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a template"
+          [required]="true">
+        </p-dropdown>
+      </div>
+
       <div class="p-field" *ngIf="['email', 'sms'].includes(editForm.actionType || '')">
         <label>Subject</label>
         <input pInputText [(ngModel)]="editForm.subject" class="p-inputtext-lg" style="width: 100%">

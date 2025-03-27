@@ -154,6 +154,7 @@ interface ChangeHistoryEntry {
 export class WorkflowVisualizerComponent implements OnInit {
   @ViewChild('fileUpload') fileUpload!: FileUpload;
 
+  smsTemplates: any[] = [];
   emailTemplates: any[] = [];
   addresseeOptions: any[] = [];
   assignedStaffOptions: any[] = [];
@@ -1220,7 +1221,17 @@ export class WorkflowVisualizerComponent implements OnInit {
       });
       return;
     }
-
+    this.workflowDataService.getSmsTemplates(this.licenseId, this.applicationId).subscribe({
+      next: (Smstemplates) => {
+        this.smsTemplates = Smstemplates; 
+        console.log('SMS templates loaded:', Smstemplates); // Update SMS templates
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'SMS templates loaded successfully'
+        });
+      }
+    });
     // Get assigned staff
     this.workflowDataService.getAssignedStaff(this.licenseId).subscribe({
       next: (staff) => {

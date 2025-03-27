@@ -12,7 +12,7 @@ export class WorkflowDataService {
   constructor(private http: HttpClient) { }
 
   getEmailTemplates(licenseId: number, applicationId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/emailtemplates?licenseId=${licenseId}&applicationId=${applicationId}`);
+    return this.http.get<any[]>(`${this.apiUrl}/emailtemplates?licenseId=${licenseId}&applicationTypeId=${applicationId}`);
   }
 
   getAddressees(): Observable<any[]> {
@@ -21,5 +21,8 @@ export class WorkflowDataService {
 
   getAssignedStaff(licenseId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/assignedstaff?licenseId=${licenseId}`);
+  }
+  getSmsTemplates(licenseId: number, applicationId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/smstemplates?licenseId=${licenseId}&applicationTypeId=${applicationId}`);
   }
 }

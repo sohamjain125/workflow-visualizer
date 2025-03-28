@@ -17,6 +17,10 @@ interface Template {
   _name: string;
   _saveToRelatedDoc: boolean;
   _securePDF: boolean;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
 }
 
 interface Letters {
@@ -26,6 +30,10 @@ interface Letters {
 interface BusinessRule {
   _name: string;
   _ErrorMessage: string;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
 }
 
 interface BusinessRules {
@@ -52,17 +60,29 @@ interface Action {
   _displayLocation?: string;
   _costOfDevelopment?: string;
   _OPBuildingPart?: string;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
   letters?: Letters;
 }
 
 interface Reminder {
   _content: string;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
 }
 
 interface Transition {
   _input: string;
   _next: string;
   _selectAttachment: string;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
   action?: Action[];
   reminder?: Reminder[];
   businessRules?: BusinessRules;
@@ -72,6 +92,10 @@ interface State {
   _name: string;
   _IdleDays: string;
   _assignedStaff?: string;
+  _isActive?: string;
+  _isRequired?: string;
+  _description?: string;
+  _category?: string;
   transition?: Transition[];
 }
 
@@ -565,21 +589,26 @@ export class WorkflowVisualizerComponent implements OnInit {
       console.log('Loading workflow data:', jsonData);
       
       if (jsonData.state) {
-        // Store workflow metadata
-        this.workflowName = jsonData._name;
-        this.initialStatus = jsonData._initialStatus;
-        this.emailAdmin = jsonData._EmailAdmin;
-        this.smsAdmin = jsonData._SMSAdmin;
-        this.preAppInitStatus = jsonData._PreAppInitStatus;
+        // Store workflow metadata with default values
+        this.workflowName = jsonData._name || "BuildingPermit";
+        this.initialStatus = jsonData._initialStatus || "New";
+        this.emailAdmin = jsonData._EmailAdmin || "no";
+        this.smsAdmin = jsonData._SMSAdmin || "no";
+        this.preAppInitStatus = jsonData._PreAppInitStatus || "NewPreApplication";
 
         const states = jsonData.state;
         this.treeData = states.map((state) => {
           return {
             data: {
               type: 'state',
-              name: state._name,
-              idleDays: state._IdleDays,
-              assignedStaff: state._assignedStaff || ''
+              name: state._name || 'Unnamed State',
+              idleDays: state._IdleDays || "0",
+              assignedStaff: state._assignedStaff || '',
+              // Add default values for other properties
+              isActive: state._isActive === 'true' || false,
+              isRequired: state._isRequired === 'true' || false,
+              description: state._description || '',
+              category: state._category || 'default'
             },
             children: this.mapTransitions(state.transition || [])
           };
@@ -625,10 +654,15 @@ export class WorkflowVisualizerComponent implements OnInit {
       const node: TreeNode = {
         data: {
           type: 'transition',
-          name: transition._input,
-          input: transition._input,
-          next: transition._next,
-          selectAttachment: transition._selectAttachment === 'true'
+          name: transition._input || 'Unnamed Transition',
+          input: transition._input || '',
+          next: transition._next || '',
+          selectAttachment: transition._selectAttachment === 'true' || false,
+          // Add default values for other properties
+          isActive: transition._isActive === 'true' || false,
+          isRequired: transition._isRequired === 'true' || false,
+          description: transition._description || '',
+          category: transition._category || 'default'
         },
         children: []
       };
@@ -640,7 +674,7 @@ export class WorkflowVisualizerComponent implements OnInit {
         const actionNodes: TreeNode[] = [];
         
         transition.action.forEach((action) => {
-          // Handle regular action
+          // Handle regular action with default values
           const actionNode = this.createActionNode(action);
           actionNodes.push(actionNode);
 
@@ -684,13 +718,13 @@ export class WorkflowVisualizerComponent implements OnInit {
       data: {
         type: 'action',
         name: action._template || action._content || action._addressee || 'Unnamed Action',
-        actionType: action._type,
+        actionType: action._type || 'email',
         addressee: action._addressee ? action._addressee.split(',') : [],
         subject: action._subject || '',
         template: action._template || '',
         content: action._content || '',
-        isReviewable: action._isReviewable === 'true',
-        previewOnly: action._previewOnly === 'true',
+        isReviewable: action._isReviewable === 'true' || false,
+        previewOnly: action._previewOnly === 'true' || false,
         access: action._access || '',
         documentFolder: action._documentFolder || '',
         docType: action._docType || '',
@@ -698,11 +732,16 @@ export class WorkflowVisualizerComponent implements OnInit {
         decisionType: action._decisionType || '',
         commencedBy: action._commencedBy || '',
         completedBy: action._completedBy || '',
-        isCombineAllotment: action._isCombineAllotment === 'true',
-        isSubdivision: action._isSubdivision === 'true',
+        isCombineAllotment: action._isCombineAllotment === 'true' || false,
+        isSubdivision: action._isSubdivision === 'true' || false,
         displayLocation: action._displayLocation || '',
         costOfDevelopment: action._costOfDevelopment || '',
-        OPBuildingPart: action._OPBuildingPart || ''
+        OPBuildingPart: action._OPBuildingPart || '',
+        // Add default values for other properties
+        isActive: action._isActive === 'true' || false,
+        isRequired: action._isRequired === 'true' || false,
+        description: action._description || '',
+        category: action._category || 'default'
       },
       children: []
     };
@@ -712,9 +751,14 @@ export class WorkflowVisualizerComponent implements OnInit {
     return {
       data: {
         type: 'template',
-        name: template._name,
-        saveToRelatedDoc: template._saveToRelatedDoc,
-        securePDF: template._securePDF
+        name: template._name || 'Unnamed Template',
+        saveToRelatedDoc: template._saveToRelatedDoc || false,
+        securePDF: template._securePDF || false,
+        // Add default values for other properties
+        isActive: template._isActive === 'true' || false,
+        isRequired: template._isRequired === 'true' || false,
+        description: template._description || '',
+        category: template._category || 'default'
       },
       children: []
     };
@@ -724,8 +768,13 @@ export class WorkflowVisualizerComponent implements OnInit {
     return {
       data: {
         type: 'reminder',
-        name: reminder._content,
-        content: reminder._content
+        name: reminder._content || 'Unnamed Reminder',
+        content: reminder._content || '',
+        // Add default values for other properties
+        isActive: reminder._isActive === 'true' || false,
+        isRequired: reminder._isRequired === 'true' || false,
+        description: reminder._description || '',
+        category: reminder._category || 'default'
       },
       children: []
     };
@@ -735,8 +784,13 @@ export class WorkflowVisualizerComponent implements OnInit {
     return {
       data: {
         type: 'rule',
-        name: rule._name,
-        errorMessage: rule._ErrorMessage
+        name: rule._name || 'Unnamed Rule',
+        errorMessage: rule._ErrorMessage || '',
+        // Add default values for other properties
+        isActive: rule._isActive === 'true' || false,
+        isRequired: rule._isRequired === 'true' || false,
+        description: rule._description || '',
+        category: rule._category || 'default'
       },
       children: []
     };
